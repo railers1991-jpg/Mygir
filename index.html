@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Free Invoice Generator — No Sign-up, No Watermark | Mygir</title>
-  <meta name="description" content="Create professional invoices for free in your browser. No sign-up, no watermark, no ads. Per-item tax, custom logo and colors, instant PDF download. Your data never leaves your device." />
-  <meta name="keywords" content="free invoice generator, invoice maker, create invoice, freelance invoice, invoice pdf, no watermark invoice" />
+  <title>Free Invoice & Quote Generator — No Sign-up, No Watermark | Mygir</title>
+  <meta name="description" content="Create professional invoices and quotes for free in your browser. No sign-up, no watermark, no ads. Multiple templates, per-item tax, saved clients, instant PDF. Your data never leaves your device." />
+  <meta name="keywords" content="free invoice generator, invoice maker, quote generator, estimate, freelance invoice, invoice pdf, no watermark invoice" />
   <link rel="canonical" href="https://example.com/" />
-  <meta property="og:title" content="Free Invoice Generator — No Sign-up, No Watermark" />
-  <meta property="og:description" content="Create professional invoices for free. Per-item tax, custom branding, instant PDF. Private: runs entirely in your browser." />
+  <meta property="og:title" content="Free Invoice & Quote Generator — No Sign-up, No Watermark" />
+  <meta property="og:description" content="Professional invoices & quotes, free. Multiple templates, per-item tax, saved clients, instant PDF. Private: runs entirely in your browser." />
   <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
   <script type="application/ld+json">
   {
@@ -23,161 +26,264 @@
   </script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="brand">🧾 Mygir</div>
-    <p class="tagline">Free invoice generator — no sign-up, no watermark, no ads.</p>
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="brand-mark">🧾</span> Mygir</div>
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-view="editor" data-i18n="tab_editor">Editor</button>
+        <button class="tab" data-view="history" data-i18n="tab_history">History</button>
+        <button class="tab" data-view="clients" data-i18n="tab_clients">Clients</button>
+        <button class="tab" data-view="settings" data-i18n="tab_settings">Settings</button>
+      </nav>
+      <div class="topbar-actions">
+        <button id="langToggle" class="ghost-btn" title="Language">EN</button>
+        <button id="themeToggle" class="ghost-btn" title="Theme">🌙</button>
+      </div>
+    </div>
   </header>
 
-  <main class="layout">
-    <!-- ============ FORM ============ -->
-    <section class="panel form-panel" aria-label="Invoice form">
-      <h1 class="seo-h1">Free Invoice Generator</h1>
-      <p class="seo-sub">Fill in the details, see a live preview, and download a clean PDF. Everything stays in your browser.</p>
+  <!-- ============ EDITOR VIEW ============ -->
+  <main class="view active" id="view-editor">
+    <div class="layout">
+      <!-- FORM -->
+      <section class="panel form-panel">
+        <h1 class="seo-h1" data-i18n="seo_h1">Free Invoice Generator</h1>
+        <p class="seo-sub" data-i18n="seo_sub">Pick a template, fill in the details, and download a clean PDF.</p>
 
-      <fieldset>
-        <legend>Branding</legend>
-        <label>Accent color
-          <input type="color" id="accentColor" value="#2563eb" />
-        </label>
-        <label>Logo (optional)
-          <input type="file" id="logoInput" accept="image/*" />
-        </label>
-        <button type="button" id="removeLogo" class="link-btn hidden">Remove logo</button>
-      </fieldset>
-
-      <fieldset>
-        <legend>From (you)</legend>
-        <input type="text" id="fromName" placeholder="Your name / company" />
-        <textarea id="fromDetails" placeholder="Address, email, phone, tax ID…" rows="3"></textarea>
-      </fieldset>
-
-      <fieldset>
-        <legend>Bill to (client)</legend>
-        <input type="text" id="toName" placeholder="Client name / company" />
-        <textarea id="toDetails" placeholder="Client address, email…" rows="3"></textarea>
-      </fieldset>
-
-      <fieldset>
-        <legend>Invoice details</legend>
-        <div class="row">
-          <label>Invoice #
-            <input type="text" id="invoiceNumber" placeholder="INV-001" />
-          </label>
-          <label>Currency
-            <select id="currency">
-              <option value="$">USD ($)</option>
-              <option value="€">EUR (€)</option>
-              <option value="£">GBP (£)</option>
-              <option value="₽">RUB (₽)</option>
-              <option value="₸">KZT (₸)</option>
-              <option value="¥">JPY/CNY (¥)</option>
-              <option value="₴">UAH (₴)</option>
-              <option value="₹">INR (₹)</option>
-            </select>
-          </label>
-        </div>
-        <div class="row">
-          <label>Issue date
-            <input type="date" id="issueDate" />
-          </label>
-          <label>Due date
-            <input type="date" id="dueDate" />
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Line items</legend>
-        <div id="itemsContainer"></div>
-        <button type="button" id="addItem" class="secondary-btn">+ Add item</button>
-      </fieldset>
-
-      <fieldset>
-        <legend>Totals</legend>
-        <label>Global discount
+        <fieldset>
+          <legend data-i18n="sec_doc">Document</legend>
           <div class="row">
-            <input type="number" id="discountValue" placeholder="0" min="0" step="0.01" />
-            <select id="discountType">
-              <option value="percent">%</option>
-              <option value="fixed">fixed</option>
-            </select>
+            <label data-i18n="doc_type">Type
+              <select id="docType">
+                <option value="invoice" data-i18n="type_invoice">Invoice</option>
+                <option value="quote" data-i18n="type_quote">Quote / Estimate</option>
+              </select>
+            </label>
+            <label data-i18n="status">Status
+              <select id="docStatus">
+                <option value="draft" data-i18n="status_draft">Draft</option>
+                <option value="unpaid" data-i18n="status_unpaid">Unpaid</option>
+                <option value="paid" data-i18n="status_paid">Paid</option>
+              </select>
+            </label>
           </div>
-        </label>
-      </fieldset>
+          <label data-i18n="template">Template
+            <div class="template-picker" id="templatePicker">
+              <button type="button" class="tpl-chip active" data-tpl="modern" data-i18n="tpl_modern">Modern</button>
+              <button type="button" class="tpl-chip" data-tpl="classic" data-i18n="tpl_classic">Classic</button>
+              <button type="button" class="tpl-chip" data-tpl="minimal" data-i18n="tpl_minimal">Minimal</button>
+            </div>
+          </label>
+        </fieldset>
 
+        <fieldset>
+          <legend data-i18n="sec_branding">Branding</legend>
+          <label data-i18n="accent">Accent color
+            <input type="color" id="accentColor" value="#2563eb" />
+          </label>
+          <label data-i18n="logo">Logo (optional)
+            <input type="file" id="logoInput" accept="image/*" />
+          </label>
+          <button type="button" id="removeLogo" class="link-btn hidden" data-i18n="remove_logo">Remove logo</button>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_from">From (you)</legend>
+          <input type="text" id="fromName" data-i18n-ph="from_name_ph" placeholder="Your name / company" />
+          <textarea id="fromDetails" data-i18n-ph="from_details_ph" placeholder="Address, email, phone…" rows="3"></textarea>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_to">Bill to (client)</legend>
+          <select id="clientPicker" class="full">
+            <option value="" data-i18n="choose_client">Choose saved client…</option>
+          </select>
+          <input type="text" id="toName" data-i18n-ph="to_name_ph" placeholder="Client name / company" />
+          <textarea id="toDetails" data-i18n-ph="to_details_ph" placeholder="Client address, email…" rows="3"></textarea>
+          <button type="button" id="saveClient" class="secondary-btn small" data-i18n="save_client">Save client</button>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_details">Details</legend>
+          <div class="row">
+            <label data-i18n="number">Number
+              <input type="text" id="invoiceNumber" placeholder="INV-0001" />
+            </label>
+            <label data-i18n="currency">Currency
+              <select id="currency">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="RUB">RUB (₽)</option>
+                <option value="KZT">KZT (₸)</option>
+                <option value="CNY">CNY (¥)</option>
+                <option value="JPY">JPY (¥)</option>
+                <option value="UAH">UAH (₴)</option>
+                <option value="INR">INR (₹)</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label data-i18n="issue_date">Issue date
+              <input type="date" id="issueDate" />
+            </label>
+            <label data-i18n="due_date">Due date
+              <input type="date" id="dueDate" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_items">Line items</legend>
+          <div id="itemsContainer"></div>
+          <button type="button" id="addItem" class="secondary-btn" data-i18n="add_item">+ Add item</button>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_totals">Totals</legend>
+          <label data-i18n="tax_label">Tax label
+            <input type="text" id="taxLabel" data-i18n-ph="tax_label_ph" placeholder="VAT / GST / Sales tax" />
+          </label>
+          <label data-i18n="global_discount">Global discount
+            <div class="row">
+              <input type="number" id="discountValue" placeholder="0" min="0" step="0.01" />
+              <select id="discountType">
+                <option value="percent" data-i18n="percent">%</option>
+                <option value="fixed" data-i18n="fixed">fixed</option>
+              </select>
+            </div>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_notes">Notes</legend>
+          <textarea id="notes" data-i18n-ph="notes_ph" placeholder="Payment details…" rows="3"></textarea>
+        </fieldset>
+
+        <div class="actions">
+          <button type="button" id="saveDoc" class="primary-btn" data-i18n="save">Save</button>
+          <button type="button" id="downloadPdf" class="primary-btn ghost" data-i18n="download_pdf">Download PDF</button>
+          <button type="button" id="printBtn" class="secondary-btn" data-i18n="print">Print</button>
+          <button type="button" id="resetBtn" class="link-btn" data-i18n="reset">New / Reset</button>
+        </div>
+        <p class="privacy-note" data-i18n="privacy">🔒 Your data never leaves your device.</p>
+      </section>
+
+      <!-- PREVIEW -->
+      <section class="panel preview-panel">
+        <div class="preview-scroll">
+          <div id="invoice" class="invoice tpl-modern">
+            <div class="paid-stamp hidden" id="paidStamp" data-i18n="paid_stamp">PAID</div>
+            <div class="invoice-header">
+              <div class="invoice-brand">
+                <img id="pvLogo" class="pv-logo hidden" alt="Logo" />
+                <div id="pvFromName" class="pv-from-name"></div>
+                <div id="pvFromDetails" class="pv-muted pv-pre"></div>
+              </div>
+              <div class="invoice-title-block">
+                <div class="invoice-title" id="pvTitle">INVOICE</div>
+                <div class="pv-muted">#&nbsp;<span id="pvInvoiceNumber"></span></div>
+              </div>
+            </div>
+
+            <div class="invoice-meta">
+              <div class="bill-to">
+                <div class="pv-label" id="pvBillToLabel">Bill to</div>
+                <div id="pvToName" class="pv-strong"></div>
+                <div id="pvToDetails" class="pv-muted pv-pre"></div>
+              </div>
+              <div class="dates">
+                <div><span class="pv-label" id="pvIssuedLabel">Issued</span>: <span id="pvIssueDate">—</span></div>
+                <div><span class="pv-label" id="pvDueLabel">Due</span>: <span id="pvDueDate">—</span></div>
+              </div>
+            </div>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th class="col-desc" id="thDesc">Description</th>
+                  <th class="col-num" id="thQty">Qty</th>
+                  <th class="col-num" id="thPrice">Price</th>
+                  <th class="col-num" id="thTax">Tax %</th>
+                  <th class="col-num" id="thAmount">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="pvItems"></tbody>
+            </table>
+
+            <div class="totals">
+              <div class="totals-row"><span id="pvSubtotalLabel">Subtotal</span><span id="pvSubtotal">—</span></div>
+              <div class="totals-row"><span id="pvTaxLabel">Tax</span><span id="pvTax">—</span></div>
+              <div class="totals-row hidden" id="pvDiscountRow"><span id="pvDiscountLabel">Discount</span><span id="pvDiscount">—</span></div>
+              <div class="totals-row grand"><span id="pvTotalLabel">Total</span><span id="pvTotal">—</span></div>
+            </div>
+
+            <div id="pvNotesBlock" class="invoice-notes hidden">
+              <div class="pv-label" id="pvNotesLabel">Notes</div>
+              <div id="pvNotes" class="pv-pre"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============ HISTORY VIEW ============ -->
+  <main class="view" id="view-history">
+    <div class="panel wide-panel">
+      <h2 data-i18n="history_title">Saved documents</h2>
+      <div id="historyList" class="record-list"></div>
+    </div>
+  </main>
+
+  <!-- ============ CLIENTS VIEW ============ -->
+  <main class="view" id="view-clients">
+    <div class="panel wide-panel">
+      <h2 data-i18n="clients_title">Saved clients</h2>
+      <div id="clientsList" class="record-list"></div>
+    </div>
+  </main>
+
+  <!-- ============ SETTINGS VIEW ============ -->
+  <main class="view" id="view-settings">
+    <div class="panel wide-panel">
+      <h2 data-i18n="settings_title">Settings</h2>
       <fieldset>
-        <legend>Notes</legend>
-        <textarea id="notes" placeholder="Payment details, bank account, thank-you note…" rows="3"></textarea>
+        <legend data-i18n="set_language">Language</legend>
+        <select id="setLanguage">
+          <option value="en">English</option>
+          <option value="ru">Русский</option>
+        </select>
       </fieldset>
-
-      <div class="actions">
-        <button type="button" id="downloadPdf" class="primary-btn">⬇ Download PDF</button>
-        <button type="button" id="printBtn" class="secondary-btn">🖨 Print</button>
-        <button type="button" id="resetBtn" class="link-btn">Reset</button>
-      </div>
-      <p class="privacy-note">🔒 Your data never leaves your device. Everything runs in your browser.</p>
-    </section>
-
-    <!-- ============ PREVIEW ============ -->
-    <section class="panel preview-panel" aria-label="Invoice preview">
-      <div id="invoice" class="invoice">
-        <div class="invoice-header">
-          <div class="invoice-brand">
-            <img id="pvLogo" class="pv-logo hidden" alt="Logo" />
-            <div id="pvFromName" class="pv-from-name">Your name / company</div>
-            <div id="pvFromDetails" class="pv-muted pv-pre"></div>
-          </div>
-          <div class="invoice-title-block">
-            <div class="invoice-title">INVOICE</div>
-            <div class="pv-muted"># <span id="pvInvoiceNumber">INV-001</span></div>
-          </div>
+      <fieldset>
+        <legend data-i18n="set_theme">Theme</legend>
+        <select id="setTheme">
+          <option value="light" data-i18n="theme_light">Light</option>
+          <option value="dark" data-i18n="theme_dark">Dark</option>
+        </select>
+      </fieldset>
+      <fieldset>
+        <legend data-i18n="set_data">Your data</legend>
+        <p class="hint" data-i18n="data_hint">Back up or move your invoices and clients between devices.</p>
+        <div class="actions">
+          <button type="button" id="exportData" class="secondary-btn" data-i18n="export_data">Export all data (JSON)</button>
+          <button type="button" id="importData" class="secondary-btn" data-i18n="import_data">Import data (JSON)</button>
+          <input type="file" id="importFile" accept="application/json" class="hidden" />
         </div>
-
-        <div class="invoice-meta">
-          <div class="bill-to">
-            <div class="pv-label">Bill to</div>
-            <div id="pvToName" class="pv-strong">Client name</div>
-            <div id="pvToDetails" class="pv-muted pv-pre"></div>
-          </div>
-          <div class="dates">
-            <div><span class="pv-label">Issued:</span> <span id="pvIssueDate">—</span></div>
-            <div><span class="pv-label">Due:</span> <span id="pvDueDate">—</span></div>
-          </div>
-        </div>
-
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th class="col-desc">Description</th>
-              <th class="col-num">Qty</th>
-              <th class="col-num">Price</th>
-              <th class="col-num">Tax %</th>
-              <th class="col-num">Amount</th>
-            </tr>
-          </thead>
-          <tbody id="pvItems"></tbody>
-        </table>
-
-        <div class="totals">
-          <div class="totals-row"><span>Subtotal</span><span id="pvSubtotal">—</span></div>
-          <div class="totals-row"><span>Tax</span><span id="pvTax">—</span></div>
-          <div class="totals-row" id="pvDiscountRow"><span>Discount</span><span id="pvDiscount">—</span></div>
-          <div class="totals-row grand"><span>Total</span><span id="pvTotal">—</span></div>
-        </div>
-
-        <div id="pvNotesBlock" class="invoice-notes hidden">
-          <div class="pv-label">Notes</div>
-          <div id="pvNotes" class="pv-pre"></div>
-        </div>
-      </div>
-    </section>
+      </fieldset>
+    </div>
   </main>
 
   <footer class="site-footer">
-    <p>Made with Mygir · 100% free · No account required · Your data stays on your device.</p>
+    <p data-i18n="footer">Made with Mygir · 100% free · No account required.</p>
   </footer>
 
+  <div id="toast" class="toast hidden"></div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/store.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
