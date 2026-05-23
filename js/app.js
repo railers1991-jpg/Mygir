@@ -80,6 +80,10 @@
     if (!v) return "—";
     try { return new Date(v).toLocaleDateString(I18N.locale()); } catch (e) { return v; }
   }
+  function formatCur(n, cur) {
+    try { return new Intl.NumberFormat(I18N.locale(), { style: "currency", currency: cur || "USD" }).format(n || 0); }
+    catch (e) { return (n || 0).toFixed(2); }
+  }
 
   function toast(msg) {
     const t = el("toast");
@@ -312,6 +316,125 @@
     if (name === "history") renderHistory();
     if (name === "clients") renderClients();
     if (name === "profile") renderProfile();
+    if (name === "dashboard") renderDashboard();
+  }
+
+  /* ============ Dashboard / analytics ============ */
+  async function renderDashboard() {
+    const host = el("dashboardContent");
+    host.innerHTML = "";
+    let docs;
+    try {
+      docs = cloudOn() ? (currentCompanyId ? await CLOUD.listInvoices(currentCompanyId) : []) : STORE.getInvoices();
+    } catch (e) {
+      host.innerHTML = `<div class="empty-state">${escapeHtml(e.message || String(e))}</div>`;
+      return;
+    }
+    if (!docs.length) {
+      host.innerHTML = `<div class="empty-state">${I18N.t("dash_empty")}</div>`;
+      return;
+    }
+
+    const byCur = {};
+    const clientsSet = new Set();
+    docs.forEach((d) => {
+      const cur = d.currency || "USD";
+      const total = invoiceTotal(d);
+      const g = byCur[cur] || (byCur[cur] = { invoiced: 0, paid: 0, outstanding: 0, count: 0, monthly: {}, clients: {} });
+      g.invoiced += total; g.count += 1;
+      if (d.status === "paid") g.paid += total; else g.outstanding += total;
+      const m = (d.issueDate || "").slice(0, 7);
+      if (m) g.monthly[m] = (g.monthly[m] || 0) + total;
+      const cname = (d.toName || "").trim();
+      if (cname) { g.clients[cname] = (g.clients[cname] || 0) + total; clientsSet.add(cname); }
+    });
+
+    // Top counters (currency-agnostic)
+    const counters = document.createElement("div");
+    counters.className = "dash-cards";
+    counters.appendChild(card(I18N.t("dash_documents"), String(docs.length)));
+    counters.appendChild(card(I18N.t("dash_clients"), String(clientsSet.size)));
+    host.appendChild(counters);
+
+    // Per-currency blocks, dominant first
+    Object.keys(byCur).sort((a, b) => byCur[b].count - byCur[a].count).forEach((cur) => {
+      const g = byCur[cur];
+      const tag = document.createElement("div");
+      tag.className = "dash-cur-tag";
+      tag.textContent = cur;
+      host.appendChild(tag);
+
+      const cards = document.createElement("div");
+      cards.className = "dash-cards";
+      cards.appendChild(card(I18N.t("dash_invoiced"), formatCur(g.invoiced, cur), "accent"));
+      cards.appendChild(card(I18N.t("dash_paid"), formatCur(g.paid, cur), "good"));
+      cards.appendChild(card(I18N.t("dash_outstanding"), formatCur(g.outstanding, cur), "warn"));
+      host.appendChild(cards);
+
+      // Monthly bar chart (last 6 months present)
+      const months = Object.keys(g.monthly).sort();
+      if (months.length) {
+        const recent = months.slice(-6);
+        const max = Math.max.apply(null, recent.map((m) => g.monthly[m]));
+        const sec = document.createElement("div");
+        sec.className = "dash-section";
+        const h = document.createElement("h3");
+        h.textContent = I18N.t("dash_by_month");
+        sec.appendChild(h);
+        const chart = document.createElement("div");
+        chart.className = "bar-chart";
+        recent.forEach((m) => {
+          const colEl = document.createElement("div");
+          colEl.className = "bar-col";
+          const v = document.createElement("div");
+          v.className = "bar-val";
+          v.textContent = Math.round(g.monthly[m]);
+          const bar = document.createElement("div");
+          bar.className = "bar";
+          bar.style.height = (max > 0 ? Math.max(2, (g.monthly[m] / max) * 100) : 2) + "%";
+          const lab = document.createElement("div");
+          lab.className = "bar-label";
+          lab.textContent = monthLabel(m);
+          colEl.append(v, bar, lab);
+          chart.appendChild(colEl);
+        });
+        sec.appendChild(chart);
+        host.appendChild(sec);
+      }
+
+      // Top clients
+      const top = Object.keys(g.clients).map((n) => ({ n, v: g.clients[n] })).sort((a, b) => b.v - a.v).slice(0, 5);
+      if (top.length) {
+        const sec = document.createElement("div");
+        sec.className = "dash-section";
+        const h = document.createElement("h3");
+        h.textContent = I18N.t("dash_top_clients");
+        sec.appendChild(h);
+        const listEl = document.createElement("div");
+        listEl.className = "top-list";
+        top.forEach((t) => {
+          const row = document.createElement("div");
+          row.className = "top-row";
+          row.innerHTML = `<span class="name">${escapeHtml(t.n)}</span><span class="amt">${formatCur(t.v, cur)}</span>`;
+          listEl.appendChild(row);
+        });
+        sec.appendChild(listEl);
+        host.appendChild(sec);
+      }
+    });
+  }
+
+  function card(label, value, cls) {
+    const d = document.createElement("div");
+    d.className = "dash-card" + (cls ? " " + cls : "");
+    d.innerHTML = `<div class="label"></div><div class="value"></div>`;
+    d.querySelector(".label").textContent = label;
+    d.querySelector(".value").textContent = value;
+    return d;
+  }
+  function monthLabel(m) {
+    try { return new Date(m + "-01").toLocaleDateString(I18N.locale(), { month: "short", year: "2-digit" }); }
+    catch (e) { return m; }
   }
 
   function renderProfile() {

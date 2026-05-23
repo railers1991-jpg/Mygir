@@ -153,6 +153,17 @@ window.MYGIR_I18N = (function () {
       profile_signed_in: "Signed in as",
       preferences: "Preferences",
       sec_account: "Account",
+
+      tab_dashboard: "Dashboard",
+      dash_title: "Dashboard",
+      dash_invoiced: "Invoiced",
+      dash_paid: "Paid",
+      dash_outstanding: "Outstanding",
+      dash_documents: "Documents",
+      dash_clients: "Clients",
+      dash_by_month: "Invoiced by month",
+      dash_top_clients: "Top clients",
+      dash_empty: "No data yet. Create and save some invoices first.",
     },
     ru: {
       tagline: "Бесплатный генератор счетов и смет — без регистрации и водяных знаков.",
@@ -304,6 +315,17 @@ window.MYGIR_I18N = (function () {
       profile_signed_in: "Вы вошли как",
       preferences: "Настройки",
       sec_account: "Аккаунт",
+
+      tab_dashboard: "Аналитика",
+      dash_title: "Аналитика",
+      dash_invoiced: "Выставлено",
+      dash_paid: "Оплачено",
+      dash_outstanding: "Не оплачено",
+      dash_documents: "Документов",
+      dash_clients: "Клиентов",
+      dash_by_month: "Выставлено по месяцам",
+      dash_top_clients: "Топ клиентов",
+      dash_empty: "Пока нет данных. Создайте и сохраните несколько счетов.",
     },
   };
 
