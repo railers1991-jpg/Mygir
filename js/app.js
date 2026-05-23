@@ -87,7 +87,17 @@
   /* ============ i18n application ============ */
   function applyI18n() {
     document.querySelectorAll("[data-i18n]").forEach((node) => {
-      node.textContent = I18N.t(node.getAttribute("data-i18n"));
+      const val = I18N.t(node.getAttribute("data-i18n"));
+      if (node.childElementCount > 0) {
+        // Element wraps child controls (e.g. <label>Text <input></label>):
+        // only update the leading text node so the controls are preserved.
+        let textNode = node.firstChild;
+        while (textNode && textNode.nodeType !== 3) textNode = textNode.nextSibling;
+        if (textNode) textNode.nodeValue = val;
+        else node.insertBefore(document.createTextNode(val), node.firstChild);
+      } else {
+        node.textContent = val;
+      }
     });
     document.querySelectorAll("[data-i18n-ph]").forEach((node) => {
       node.setAttribute("placeholder", I18N.t(node.getAttribute("data-i18n-ph")));
