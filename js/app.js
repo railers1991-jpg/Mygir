@@ -419,9 +419,10 @@
     const name = el("companyName").value.trim();
     if (!name) return;
     const id = el("companyId").value;
-    if (!id && !isPro() && companies.length >= FREE_MAX_COMPANIES) {
-      openUpgrade("limit_companies");
-      return;
+    if (!id && !isPro()) {
+      let existing = companies;
+      try { existing = await CLOUD.listCompanies(); } catch (e) {}
+      if (existing.length >= FREE_MAX_COMPANIES) { openUpgrade("limit_companies"); return; }
     }
     const payload = {
       name,
