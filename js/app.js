@@ -816,5 +816,9 @@
     } catch (e) { console.error("Mygir cloud init error:", e); }
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();

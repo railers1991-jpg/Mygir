@@ -3,6 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    /* Visible error catcher — surfaces JS errors on screen (useful on mobile
+       where the dev console is not available). Shows nothing unless an error
+       actually occurs. */
+    (function () {
+      function show(msg) {
+        try {
+          var box = document.getElementById("mygir-error");
+          if (!box) {
+            box = document.createElement("div");
+            box.id = "mygir-error";
+            box.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99999;" +
+              "background:#b91c1c;color:#fff;font:13px/1.45 monospace;padding:10px 36px 10px 14px;" +
+              "white-space:pre-wrap;max-height:45vh;overflow:auto;box-shadow:0 -2px 12px rgba(0,0,0,.3)";
+            var x = document.createElement("button");
+            x.textContent = "×";
+            x.style.cssText = "position:absolute;top:6px;right:10px;background:none;border:none;color:#fff;font-size:20px;cursor:pointer";
+            x.onclick = function () { box.remove(); };
+            (document.body || document.documentElement).appendChild(box);
+            box.appendChild(x);
+          }
+          var line = document.createElement("div");
+          line.textContent = "⚠ " + msg;
+          box.appendChild(line);
+        } catch (e) {}
+      }
+      window.addEventListener("error", function (e) {
+        show((e.message || "Script error") + (e.filename ? (" @ " + String(e.filename).split("/").pop() + ":" + e.lineno) : ""));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e.reason;
+        show("Promise: " + ((r && (r.message || r)) || "unknown"));
+      });
+    })();
+  </script>
   <title>Free Invoice & Quote Generator — No Sign-up, No Watermark | Mygir</title>
   <meta name="description" content="Create professional invoices and quotes for free in your browser. No sign-up, no watermark, no ads. Multiple templates, per-item tax, saved clients, instant PDF. Your data never leaves your device." />
   <meta name="keywords" content="free invoice generator, invoice maker, quote generator, estimate, freelance invoice, invoice pdf, no watermark invoice" />
