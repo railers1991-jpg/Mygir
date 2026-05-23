@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://railers1991-jpg.github.io/Mygir/sitemap.xml
