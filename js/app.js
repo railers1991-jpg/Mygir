@@ -11,8 +11,13 @@
   let companies = [];
   let currentCompanyId = null;
   let authMode = "login";
+  let plan = "free";
+
+  const FREE_MAX_COMPANIES = 1;
+  const FREE_MAX_INVOICES = 5;
 
   function cloudOn() { return CLOUD && CLOUD.enabled() && !!CLOUD.currentUser(); }
+  function isPro() { return plan === "pro"; }
   function currentCompany() { return companies.find((c) => c.id === currentCompanyId) || null; }
 
   const TITLES = {
@@ -413,6 +418,11 @@
   async function saveCompanyForm() {
     const name = el("companyName").value.trim();
     if (!name) return;
+    const id = el("companyId").value;
+    if (!id && !isPro() && companies.length >= FREE_MAX_COMPANIES) {
+      openUpgrade("limit_companies");
+      return;
+    }
     const payload = {
       name,
       tax_id: el("companyTaxId").value || null,
@@ -420,7 +430,6 @@
       email: el("companyEmail").value || null,
       address: el("companyAddress").value || null,
     };
-    const id = el("companyId").value;
     if (id) payload.id = id;
     try {
       const saved = await CLOUD.saveCompany(payload);
@@ -431,6 +440,20 @@
       populateCompanySwitcher(); renderCompanies();
       toast(I18N.t("toast_saved"));
     } catch (e) { alert(e.message || e); }
+  }
+
+  function openUpgrade(reasonKey) {
+    if (reasonKey) toast(I18N.t(reasonKey));
+    el("upgradeModal").classList.remove("hidden");
+  }
+  function closeUpgrade() { el("upgradeModal").classList.add("hidden"); }
+
+  function renderPlan() {
+    const fs = el("planFieldset");
+    if (!cloudOn()) { fs.classList.add("hidden"); return; }
+    fs.classList.remove("hidden");
+    el("planValue").textContent = I18N.t(isPro() ? "plan_pro" : "plan_free");
+    el("upgradeBtn").classList.toggle("hidden", isPro());
   }
 
   function openAuth() {
@@ -475,15 +498,18 @@
     const btn = el("accountBtn");
     if (cloudOn()) {
       btn.textContent = CLOUD.currentUser().email || I18N.t("account");
+      try { plan = await CLOUD.getPlan(); } catch (e) { plan = "free"; }
       await loadCompanies();
       populateCompanySwitcher();
       if (currentCompanyId) applyCompanyToDoc();
       fillInputs(); update();
     } else {
       btn.textContent = I18N.t("sign_in");
+      plan = "free";
       companies = []; currentCompanyId = null;
       el("companySwitcher").classList.add("hidden");
     }
+    renderPlan();
     populateClientPicker();
   }
 
@@ -677,6 +703,10 @@
     if (cloudOn()) {
       if (!currentCompanyId) { switchView("companies"); toast(I18N.t("login_required_cloud")); return; }
       try {
+        if (!doc.id && !isPro()) {
+          const count = await CLOUD.countInvoices(currentCompanyId);
+          if (count >= FREE_MAX_INVOICES) { openUpgrade("limit_invoices"); return; }
+        }
         const saved = await CLOUD.saveInvoice(currentCompanyId, doc);
         doc.id = saved.id;
         doc.updatedAt = saved.updatedAt;
@@ -804,6 +834,12 @@
     el("companySwitcher").addEventListener("change", (e) => selectCompany(e.target.value));
     el("addCompany").addEventListener("click", () => openCompanyForm(null));
     el("saveCompany").addEventListener("click", saveCompanyForm);
+
+    // plan / upgrade
+    el("upgradeBtn").addEventListener("click", () => openUpgrade());
+    el("upgradeClose").addEventListener("click", closeUpgrade);
+    el("upgradeModal").addEventListener("click", (e) => { if (e.target === el("upgradeModal")) closeUpgrade(); });
+    el("upgradeCta").addEventListener("click", () => { toast(I18N.t("payment_soon")); closeUpgrade(); });
 
     // initial render (guarded so a failure never disables the UI above)
     try {

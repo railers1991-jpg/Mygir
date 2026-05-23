@@ -185,6 +185,9 @@ textarea { resize: vertical; }
 }
 .full-btn { width: 100%; margin: 6px 0 10px; }
 .auth-error { color: #ef4444; font-size: 13px; margin: 4px 0 10px; }
+.upgrade-benefits { margin: 12px 0 18px; padding-left: 20px; color: var(--text); }
+.upgrade-benefits li { margin-bottom: 8px; }
+.plan-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
 
 /* ====================================================================== */
 /* ===========================  INVOICE PREVIEW  ======================== */

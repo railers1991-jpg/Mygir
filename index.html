@@ -325,6 +325,12 @@
   <main class="view" id="view-settings">
     <div class="panel wide-panel">
       <h2 data-i18n="settings_title">Settings</h2>
+      <fieldset id="planFieldset" class="hidden">
+        <legend data-i18n="plan">Plan</legend>
+        <p><span data-i18n="current_plan">Current plan</span>: <strong id="planValue">—</strong></p>
+        <p class="hint" data-i18n="free_limits_note">Free plan: 1 company and up to 5 saved documents.</p>
+        <button type="button" id="upgradeBtn" class="primary-btn" data-i18n="upgrade">Upgrade to Pro</button>
+      </fieldset>
       <fieldset>
         <legend data-i18n="set_language">Language</legend>
         <select id="setLanguage">
@@ -374,6 +380,21 @@
         <button type="button" id="authSubmit" class="primary-btn full-btn" data-i18n="auth_submit_login">Sign in</button>
         <button type="button" id="authToggle" class="link-btn" data-i18n="auth_no_account">No account yet? Create one</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ============ UPGRADE MODAL ============ -->
+  <div id="upgradeModal" class="modal-overlay hidden">
+    <div class="modal">
+      <button class="modal-close" id="upgradeClose" aria-label="Close">×</button>
+      <h2 data-i18n="upgrade_title">Upgrade to Pro</h2>
+      <p class="hint" data-i18n="upgrade_desc">You reached the limits of the Free plan.</p>
+      <ul class="upgrade-benefits">
+        <li data-i18n="upgrade_b1">Unlimited companies</li>
+        <li data-i18n="upgrade_b2">Unlimited saved invoices</li>
+        <li data-i18n="upgrade_b3">Priority for upcoming features</li>
+      </ul>
+      <button type="button" id="upgradeCta" class="primary-btn full-btn" data-i18n="upgrade_cta">Upgrade</button>
     </div>
   </div>
 

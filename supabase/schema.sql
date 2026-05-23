@@ -3,6 +3,13 @@
 -- Every row is owned by the authenticated user. Row Level Security (RLS)
 -- guarantees a user can only ever read/write their own data.
 
+-- ---------- Profiles (plan: free / pro) ----------
+create table if not exists public.profiles (
+  id         uuid primary key references auth.users (id) on delete cascade,
+  plan       text not null default 'free',
+  created_at timestamptz not null default now()
+);
+
 -- ---------- Companies (фирмы) ----------
 create table if not exists public.companies (
   id                uuid primary key default gen_random_uuid(),
@@ -58,9 +65,14 @@ create index if not exists invoices_company_idx on public.invoices (company_id, 
 create index if not exists clients_company_idx on public.clients (company_id);
 
 -- ---------- Row Level Security ----------
+alter table public.profiles  enable row level security;
 alter table public.companies enable row level security;
 alter table public.clients   enable row level security;
 alter table public.invoices  enable row level security;
+
+drop policy if exists profiles_owner_all on public.profiles;
+create policy profiles_owner_all on public.profiles
+  for all using (auth.uid() = id) with check (auth.uid() = id);
 
 drop policy if exists companies_owner_all on public.companies;
 create policy companies_owner_all on public.companies

@@ -166,13 +166,31 @@ window.MYGIR_CLOUD = (function () {
     const { error } = await db.from("invoices").delete().eq("id", id);
     if (error) throw error;
   }
+  async function countInvoices(companyId) {
+    const { count, error } = await db.from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", companyId);
+    if (error) throw error;
+    return count || 0;
+  }
+
+  /* ---------- Plan (free / pro) ---------- */
+  async function getPlan() {
+    if (!user) return "free";
+    // make sure a profile row exists, without overwriting an existing plan
+    await db.from("profiles").upsert({ id: user.id }, { onConflict: "id", ignoreDuplicates: true });
+    const { data, error } = await db.from("profiles").select("plan").eq("id", user.id).single();
+    if (error || !data) return "free";
+    return data.plan || "free";
+  }
 
   return {
     isConfigured, init, onAuthChange, enabled, currentUser,
     signUp, signIn, signOut,
     listCompanies, saveCompany, deleteCompany,
     listClients, saveClient, deleteClient,
-    listInvoices, saveInvoice, deleteInvoice,
+    listInvoices, saveInvoice, deleteInvoice, countInvoices,
+    getPlan,
     docToRow, rowToDoc,
   };
 })();
