@@ -149,6 +149,27 @@ textarea { resize: vertical; }
 .badge.draft { background: color-mix(in srgb, #64748b 20%, transparent); color: var(--muted); }
 .empty-state { color: var(--muted); padding: 24px 4px; }
 
+/* ---------- History toolbar ---------- */
+.history-toolbar { display: flex; gap: 10px; margin: 8px 0 16px; flex-wrap: wrap; }
+.history-toolbar #historySearch { flex: 1; min-width: 160px; margin-top: 0; }
+.history-toolbar #historyFilter { width: auto; margin-top: 0; }
+.badge.overdue { background: color-mix(in srgb, #ef4444 18%, transparent); color: #ef4444; }
+
+/* ---------- Public viewer mode ---------- */
+.viewer-bar {
+  position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+}
+.viewer-brand { font-weight: 800; font-size: 18px; }
+.viewer-actions { display: flex; gap: 10px; align-items: center; }
+.primary-btn.small { padding: 8px 14px; font-size: 13px; text-decoration: none; display: inline-block; }
+body.viewer-mode .topbar,
+body.viewer-mode .site-footer,
+body.viewer-mode .form-panel { display: none !important; }
+body.viewer-mode .layout { grid-template-columns: 1fr; max-width: 860px; }
+body.viewer-mode .view { display: none !important; }
+body.viewer-mode #view-editor { display: block !important; }
+
 /* ---------- Dashboard ---------- */
 .dash-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 24px; }
 .dash-card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--panel-2); }

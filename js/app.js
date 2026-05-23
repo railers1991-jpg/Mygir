@@ -12,6 +12,12 @@
   let currentCompanyId = null;
   let authMode = "login";
   let plan = "free";
+  let historyDocs = [];
+
+  function todayISO() { return new Date().toISOString().slice(0, 10); }
+  function isOverdue(d) {
+    return d.status !== "paid" && d.dueDate && d.dueDate < todayISO();
+  }
 
   const FREE_MAX_COMPANIES = 1;
   const FREE_MAX_INVOICES = 5;
@@ -649,19 +655,46 @@
   async function renderHistory() {
     const list = el("historyList");
     list.innerHTML = "";
-    let docs;
     try {
-      docs = cloudOn() ? (currentCompanyId ? await CLOUD.listInvoices(currentCompanyId) : []) : STORE.getInvoices();
+      historyDocs = cloudOn() ? (currentCompanyId ? await CLOUD.listInvoices(currentCompanyId) : []) : STORE.getInvoices();
     } catch (e) {
-      list.innerHTML = `<div class="empty-state">${(e.message || e)}</div>`;
+      historyDocs = [];
+      list.innerHTML = `<div class="empty-state">${escapeHtml(e.message || String(e))}</div>`;
       return;
     }
-    if (docs.length === 0) {
+    renderHistoryList();
+  }
+
+  function renderHistoryList() {
+    const list = el("historyList");
+    list.innerHTML = "";
+    const q = (el("historySearch").value || "").trim().toLowerCase();
+    const f = el("historyFilter").value;
+
+    const docs = historyDocs.filter((d) => {
+      if (q) {
+        const hay = ((d.number || "") + " " + (d.toName || "")).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      if (f === "overdue") return isOverdue(d);
+      if (f) return (d.status || "draft") === f;
+      return true;
+    });
+
+    if (historyDocs.length === 0) {
       list.innerHTML = `<div class="empty-state">${I18N.t("history_empty")}</div>`;
       return;
     }
+    if (docs.length === 0) {
+      list.innerHTML = `<div class="empty-state">—</div>`;
+      return;
+    }
+
     docs.forEach((d) => {
       const total = invoiceTotal(d);
+      const overdue = isOverdue(d);
+      const badgeCls = overdue ? "overdue" : (d.status || "draft");
+      const badgeTxt = overdue ? I18N.t("status_overdue") : I18N.t("status_" + (d.status || "draft"));
       const rec = document.createElement("div");
       rec.className = "record";
       rec.innerHTML =
@@ -669,28 +702,104 @@
            <div class="record-title">${escapeHtml(d.number || "—")} · ${escapeHtml(d.toName || "—")}</div>
            <div class="record-sub">${formatDateForCode(d.issueDate)} · ${escapeHtml((TITLES[I18N.getLang()] || TITLES.en)[d.docType] || "")}</div>
          </div>
-         <span class="badge ${d.status || "draft"}">${I18N.t("status_" + (d.status || "draft"))}</span>
+         <span class="badge ${badgeCls}">${badgeTxt}</span>
          <span class="record-amount">${formatMoneyFor(d, total)}</span>`;
-      const open = document.createElement("button");
-      open.className = "secondary-btn small";
-      open.textContent = I18N.t("col_load");
-      open.addEventListener("click", () => {
+
+      const open = mkBtn(I18N.t("col_load"), "secondary-btn small", () => {
         doc = JSON.parse(JSON.stringify(d));
-        if (cloudOn()) applyCompanyToDoc();
+        if (cloudOn() && !doc.fromName) applyCompanyToDoc();
         fillInputs(); update(); switchView("editor");
       });
-      const del = document.createElement("button");
-      del.className = "link-btn";
-      del.textContent = I18N.t("col_delete");
-      del.addEventListener("click", async () => {
+      const dup = mkBtn(I18N.t("duplicate"), "secondary-btn small", () => duplicateDoc(d));
+      rec.append(open, dup);
+
+      if (d.status !== "paid") {
+        rec.append(mkBtn(I18N.t("reminder"), "secondary-btn small", () => copyReminder(d)));
+      }
+      if (cloudOn() && d.id) {
+        rec.append(mkBtn(I18N.t("share"), "secondary-btn small", () => shareInvoice(d)));
+      }
+      rec.append(mkBtn(I18N.t("col_delete"), "link-btn", async () => {
         if (!confirm(I18N.t("confirm_delete"))) return;
         if (cloudOn()) { try { await CLOUD.deleteInvoice(d.id); } catch (e) { alert(e.message || e); return; } }
         else STORE.deleteInvoice(d.id);
         renderHistory();
-      });
-      rec.append(open, del);
+      }));
       list.appendChild(rec);
     });
+  }
+
+  function mkBtn(text, cls, onClick) {
+    const b = document.createElement("button");
+    b.className = cls; b.textContent = text;
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function duplicateDoc(d) {
+    const copy = JSON.parse(JSON.stringify(d));
+    copy.id = null;
+    copy.publicId = ""; copy.isPublic = false;
+    copy.status = "draft";
+    copy.issueDate = todayISO();
+    copy.number = NUM_PREFIX[copy.docType] + pad(STORE.nextNumber());
+    doc = copy;
+    fillInputs(); update(); switchView("editor");
+    toast(I18N.t("duplicate"));
+  }
+
+  function reminderText(d) {
+    const total = formatMoneyFor(d, invoiceTotal(d));
+    if (I18N.getLang() === "ru") {
+      return `Здравствуйте${d.toName ? ", " + d.toName : ""}!\n\n` +
+        `Напоминаем об оплате счёта ${d.number || ""} на сумму ${total}` +
+        `${d.dueDate ? ` (срок оплаты: ${formatDateForCode(d.dueDate)})` : ""}.\n` +
+        `Будем благодарны за оплату. Спасибо!`;
+    }
+    return `Hello${d.toName ? ", " + d.toName : ""},\n\n` +
+      `This is a friendly reminder about invoice ${d.number || ""} for ${total}` +
+      `${d.dueDate ? ` (due ${formatDateForCode(d.dueDate)})` : ""}.\n` +
+      `We'd appreciate your payment. Thank you!`;
+  }
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+    return new Promise((resolve) => {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta); resolve();
+    });
+  }
+  async function copyReminder(d) {
+    await copyToClipboard(reminderText(d));
+    toast(I18N.t("reminder_copied"));
+  }
+
+  async function shareInvoice(d) {
+    if (!cloudOn() || !d.id) { toast(I18N.t("share_login")); return; }
+    try {
+      const token = d.publicId || await CLOUD.makePublic(d.id);
+      const url = location.origin + location.pathname + "?invoice=" + token;
+      await copyToClipboard(url);
+      toast(I18N.t("share_copied"));
+    } catch (e) { alert(e.message || e); }
+  }
+
+  function exportHistoryCsv() {
+    if (!historyDocs.length) return;
+    const head = ["Number", "Type", "Status", "Client", "Issue date", "Due date", "Currency", "Total"];
+    const rows = historyDocs.map((d) => [
+      d.number || "", d.docType || "", isOverdue(d) ? "overdue" : (d.status || ""),
+      d.toName || "", d.issueDate || "", d.dueDate || "", d.currency || "",
+      invoiceTotal(d).toFixed(2),
+    ]);
+    const csv = [head].concat(rows)
+      .map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(",")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "mygir-invoices.csv"; a.click();
+    URL.revokeObjectURL(url);
   }
   function invoiceTotal(d) {
     let sub = 0, tax = 0;
@@ -861,8 +970,33 @@
     update();
   }
 
+  /* ============ Public viewer mode ============ */
+  async function tryViewerMode() {
+    const pid = new URLSearchParams(location.search).get("invoice");
+    if (!pid) return false;
+    document.body.classList.add("viewer-mode");
+    I18N.setLang(settings.language || "en");
+    applyI18n();
+    el("viewerBar").classList.remove("hidden");
+    document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+    el("view-editor").classList.add("active");
+    el("viewerDownload").addEventListener("click", downloadPdf);
+    try {
+      if (!(CLOUD && CLOUD.isConfigured())) throw new Error("not configured");
+      await CLOUD.init();
+      doc = await CLOUD.getPublicInvoice(pid);
+      renderPreview();
+    } catch (e) {
+      const scroll = document.querySelector(".preview-scroll");
+      if (scroll) scroll.innerHTML = `<div class="empty-state" style="padding:24px">${I18N.t("viewer_error")}</div>`;
+    }
+    return true;
+  }
+
   /* ============ Init ============ */
   async function init() {
+    if (await tryViewerMode()) return;
+
     // field listeners
     ["docType", "docStatus", "accentColor", "fromName", "fromDetails", "toName", "toDetails",
      "invoiceNumber", "currency", "issueDate", "dueDate", "taxLabel", "discountValue",
@@ -933,6 +1067,11 @@
       const tab = e.target.closest(".tab");
       if (tab) switchView(tab.dataset.view);
     });
+
+    // history toolbar
+    el("historySearch").addEventListener("input", renderHistoryList);
+    el("historyFilter").addEventListener("change", renderHistoryList);
+    el("exportCsv").addEventListener("click", exportHistoryCsv);
 
     // top toggles
     el("langToggle").addEventListener("click", () => {

@@ -62,6 +62,8 @@ window.MYGIR_CLOUD = (function () {
       doc_type: doc.docType || "invoice",
       status: doc.status || "draft",
       number: doc.number || null,
+      from_name: doc.fromName || null,
+      from_details: doc.fromDetails || null,
       client_name: doc.toName || null,
       client_details: doc.toDetails || null,
       currency: doc.currency || "USD",
@@ -96,9 +98,10 @@ window.MYGIR_CLOUD = (function () {
       template: row.template || "modern",
       accentColor: row.accent_color || "#2563eb",
       logo: row.logo || "",
-      // "from" company fields are filled by the caller from the active company
-      fromName: "",
-      fromDetails: "",
+      fromName: row.from_name || "",
+      fromDetails: row.from_details || "",
+      publicId: row.public_id || "",
+      isPublic: !!row.is_public,
       items: Array.isArray(row.items) ? row.items : [],
       updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : Date.now(),
     };
@@ -166,6 +169,20 @@ window.MYGIR_CLOUD = (function () {
     const { error } = await db.from("invoices").delete().eq("id", id);
     if (error) throw error;
   }
+  async function makePublic(invoiceId) {
+    const token = (uid() + uid()).replace(/[^a-z0-9]/gi, "");
+    const { data, error } = await db.from("invoices")
+      .update({ is_public: true, public_id: token })
+      .eq("id", invoiceId).select("public_id").single();
+    if (error) throw error;
+    return data.public_id;
+  }
+  async function getPublicInvoice(publicId) {
+    const { data, error } = await db.from("invoices")
+      .select("*").eq("public_id", publicId).eq("is_public", true).single();
+    if (error) throw error;
+    return rowToDoc(data);
+  }
   async function countInvoices(companyId) {
     const { count, error } = await db.from("invoices")
       .select("id", { count: "exact", head: true })
@@ -190,6 +207,7 @@ window.MYGIR_CLOUD = (function () {
     listCompanies, saveCompany, deleteCompany,
     listClients, saveClient, deleteClient,
     listInvoices, saveInvoice, deleteInvoice, countInvoices,
+    makePublic, getPublicInvoice,
     getPlan,
     docToRow, rowToDoc,
   };

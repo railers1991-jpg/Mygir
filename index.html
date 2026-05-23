@@ -80,6 +80,15 @@
     </div>
   </header>
 
+  <!-- ============ PUBLIC VIEWER BAR ============ -->
+  <div id="viewerBar" class="viewer-bar hidden">
+    <span class="viewer-brand">🧾 Mygir</span>
+    <div class="viewer-actions">
+      <button type="button" id="viewerDownload" class="secondary-btn small" data-i18n="download_pdf">Download PDF</button>
+      <a id="viewerCta" class="primary-btn small" href="./" data-i18n="viewer_cta">Create your own free invoice</a>
+    </div>
+  </div>
+
   <!-- ============ EDITOR VIEW ============ -->
   <main class="view active" id="view-editor">
     <div class="layout">
@@ -278,6 +287,17 @@
   <main class="view" id="view-history">
     <div class="panel wide-panel">
       <h2 data-i18n="history_title">Saved documents</h2>
+      <div class="history-toolbar">
+        <input type="text" id="historySearch" data-i18n-ph="search_ph" placeholder="Search…" />
+        <select id="historyFilter">
+          <option value="" data-i18n="filter_all">All statuses</option>
+          <option value="draft" data-i18n="status_draft">Draft</option>
+          <option value="unpaid" data-i18n="status_unpaid">Unpaid</option>
+          <option value="paid" data-i18n="status_paid">Paid</option>
+          <option value="overdue" data-i18n="status_overdue">Overdue</option>
+        </select>
+        <button type="button" id="exportCsv" class="secondary-btn small" data-i18n="export_csv">Export CSV</button>
+      </div>
       <div id="historyList" class="record-list"></div>
     </div>
   </main>

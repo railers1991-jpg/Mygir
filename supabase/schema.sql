@@ -44,8 +44,12 @@ create table if not exists public.invoices (
   doc_type        text not null default 'invoice',
   status          text not null default 'draft',
   number          text,
+  from_name       text,
+  from_details    text,
   client_name     text,
   client_details  text,
+  public_id       text unique,
+  is_public       boolean not null default false,
   currency        text default 'USD',
   issue_date      date,
   due_date        date,
@@ -85,3 +89,8 @@ create policy clients_owner_all on public.clients
 drop policy if exists invoices_owner_all on public.invoices;
 create policy invoices_owner_all on public.invoices
   for all using (auth.uid() = owner) with check (auth.uid() = owner);
+
+-- Anyone (even anonymous) can read an invoice that was explicitly shared.
+drop policy if exists invoices_public_read on public.invoices;
+create policy invoices_public_read on public.invoices
+  for select using (is_public = true);
