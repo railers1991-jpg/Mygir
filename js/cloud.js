@@ -169,8 +169,13 @@ window.MYGIR_CLOUD = (function () {
     const { error } = await db.from("invoices").delete().eq("id", id);
     if (error) throw error;
   }
+  function randToken() {
+    return (Date.now().toString(36) +
+      Math.random().toString(36).slice(2) +
+      Math.random().toString(36).slice(2)).replace(/[^a-z0-9]/gi, "");
+  }
   async function makePublic(invoiceId) {
-    const token = (uid() + uid()).replace(/[^a-z0-9]/gi, "");
+    const token = randToken();
     const { data, error } = await db.from("invoices")
       .update({ is_public: true, public_id: token })
       .eq("id", invoiceId).select("public_id").single();
