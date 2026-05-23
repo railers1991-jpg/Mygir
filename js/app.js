@@ -691,16 +691,6 @@
 
   /* ============ Init ============ */
   async function init() {
-    // settings
-    setLang(settings.language || "en");
-    setTheme(settings.theme || "light");
-    el("setLanguage").value = settings.language || "en";
-    el("setTheme").value = settings.theme || "light";
-
-    fillInputs();
-    populateClientPicker();
-    update();
-
     // field listeners
     ["docType", "docStatus", "accentColor", "fromName", "fromDetails", "toName", "toDetails",
      "invoiceNumber", "currency", "issueDate", "dueDate", "taxLabel", "discountValue",
@@ -805,12 +795,25 @@
     el("addCompany").addEventListener("click", () => openCompanyForm(null));
     el("saveCompany").addEventListener("click", saveCompanyForm);
 
-    // cloud bootstrap
+    // initial render (guarded so a failure never disables the UI above)
     try {
-      await CLOUD.init();
-      CLOUD.onAuthChange(() => { refreshAuthUI(); });
-      await refreshAuthUI();
-    } catch (e) { /* stay in guest mode */ }
+      setLang(settings.language || "en");
+      setTheme(settings.theme || "light");
+      el("setLanguage").value = settings.language || "en";
+      el("setTheme").value = settings.theme || "light";
+      fillInputs();
+      populateClientPicker();
+      update();
+    } catch (e) { console.error("Mygir init render error:", e); }
+
+    // cloud bootstrap (fully optional; never blocks the UI)
+    try {
+      if (CLOUD && CLOUD.isConfigured()) {
+        await CLOUD.init();
+        CLOUD.onAuthChange(() => { refreshAuthUI(); });
+        await refreshAuthUI();
+      }
+    } catch (e) { console.error("Mygir cloud init error:", e); }
   }
 
   document.addEventListener("DOMContentLoaded", init);
