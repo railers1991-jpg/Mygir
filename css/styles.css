@@ -161,6 +161,31 @@ textarea { resize: vertical; }
 /* ---------- Footer ---------- */
 .site-footer { text-align: center; padding: 28px; color: var(--muted); font-size: 13px; }
 
+/* ---------- Company switcher / account ---------- */
+#companySwitcher { width: auto; max-width: 180px; margin-top: 0; padding: 7px 10px; }
+#accountBtn { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Company form ---------- */
+.company-form { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 14px 0; background: var(--panel-2); }
+
+/* ---------- Auth modal ---------- */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 12, 24, .55); backdrop-filter: blur(3px); padding: 16px;
+}
+.modal {
+  position: relative; width: 100%; max-width: 400px; background: var(--panel);
+  border: 1px solid var(--border); border-radius: 16px; padding: 26px; box-shadow: var(--shadow);
+}
+.modal h2 { margin: 0 0 16px; font-size: 20px; }
+.modal label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 14px; font-weight: 500; }
+.modal-close {
+  position: absolute; top: 12px; right: 14px; border: none; background: none;
+  font-size: 24px; line-height: 1; cursor: pointer; color: var(--muted);
+}
+.full-btn { width: 100%; margin: 6px 0 10px; }
+.auth-error { color: #ef4444; font-size: 13px; margin: 4px 0 10px; }
+
 /* ====================================================================== */
 /* ===========================  INVOICE PREVIEW  ======================== */
 /* ====================================================================== */

@@ -3,9 +3,17 @@
 (function () {
   const I18N = window.MYGIR_I18N;
   const STORE = window.MYGIR_STORE;
+  const CLOUD = window.MYGIR_CLOUD;
   const CURRENT_KEY = "mygir_current";
 
   const el = (id) => document.getElementById(id);
+
+  let companies = [];
+  let currentCompanyId = null;
+  let authMode = "login";
+
+  function cloudOn() { return CLOUD && CLOUD.enabled() && !!CLOUD.currentUser(); }
+  function currentCompany() { return companies.find((c) => c.id === currentCompanyId) || null; }
 
   const TITLES = {
     en: { invoice: "INVOICE", quote: "QUOTE" },
@@ -288,13 +296,198 @@
     el("view-" + name).classList.add("active");
     if (name === "history") renderHistory();
     if (name === "clients") renderClients();
+    if (name === "companies") renderCompanies();
+  }
+
+  /* ============ Companies + auth (cloud) ============ */
+  function applyCompanyToDoc() {
+    const co = currentCompany();
+    if (!co) return;
+    doc.fromName = co.name || "";
+    const lines = [co.address, co.email, co.phone, co.tax_id].filter(Boolean);
+    doc.fromDetails = lines.join("\n");
+    if (co.accent_color) doc.accentColor = co.accent_color;
+  }
+
+  async function loadCompanies() {
+    if (!cloudOn()) { companies = []; currentCompanyId = null; return; }
+    companies = await CLOUD.listCompanies();
+    const saved = STORE.getSettings().lastCompanyId;
+    if (saved && companies.some((c) => c.id === saved)) currentCompanyId = saved;
+    else currentCompanyId = companies.length ? companies[0].id : null;
+  }
+
+  function populateCompanySwitcher() {
+    const sel = el("companySwitcher");
+    if (!cloudOn() || companies.length === 0) { sel.classList.add("hidden"); return; }
+    sel.classList.remove("hidden");
+    sel.innerHTML = "";
+    companies.forEach((c) => {
+      const o = document.createElement("option");
+      o.value = c.id; o.textContent = c.name || "—";
+      if (c.id === currentCompanyId) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function renderCompanies() {
+    const list = el("companiesList");
+    const hint = el("companiesLoginHint");
+    const form = el("companyForm");
+    if (!cloudOn()) {
+      hint.classList.remove("hidden");
+      form.classList.add("hidden");
+      el("addCompany").classList.add("hidden");
+      list.innerHTML = "";
+      return;
+    }
+    hint.classList.add("hidden");
+    el("addCompany").classList.remove("hidden");
+    list.innerHTML = "";
+    if (companies.length === 0) {
+      list.innerHTML = `<div class="empty-state">${I18N.t("companies_empty")}</div>`;
+      return;
+    }
+    companies.forEach((c) => {
+      const rec = document.createElement("div");
+      rec.className = "record";
+      rec.innerHTML =
+        `<div class="record-main">
+           <div class="record-title">${escapeHtml(c.name || "—")}</div>
+           <div class="record-sub">${escapeHtml(c.tax_id || c.email || "")}</div>
+         </div>`;
+      if (c.id === currentCompanyId) {
+        const b = document.createElement("span");
+        b.className = "badge paid"; b.textContent = "✓";
+        rec.appendChild(b);
+      }
+      const useBtn = document.createElement("button");
+      useBtn.className = "secondary-btn small";
+      useBtn.textContent = I18N.getLang() === "ru" ? "Выбрать" : "Select";
+      useBtn.addEventListener("click", () => selectCompany(c.id));
+      const editBtn = document.createElement("button");
+      editBtn.className = "secondary-btn small";
+      editBtn.textContent = I18N.t("col_load");
+      editBtn.addEventListener("click", () => openCompanyForm(c));
+      const del = document.createElement("button");
+      del.className = "link-btn";
+      del.textContent = I18N.t("col_delete");
+      del.addEventListener("click", async () => {
+        if (!confirm(I18N.t("confirm_delete"))) return;
+        try { await CLOUD.deleteCompany(c.id); } catch (e) { alert(e.message || e); return; }
+        await loadCompanies(); populateCompanySwitcher(); renderCompanies();
+      });
+      rec.append(useBtn, editBtn, del);
+      list.appendChild(rec);
+    });
+  }
+
+  function selectCompany(id) {
+    currentCompanyId = id;
+    const s = STORE.getSettings(); s.lastCompanyId = id; STORE.saveSettings(s);
+    populateCompanySwitcher();
+    applyCompanyToDoc(); fillInputs(); update();
+    renderCompanies();
+  }
+
+  function openCompanyForm(c) {
+    el("companyForm").classList.remove("hidden");
+    el("companyId").value = c ? c.id : "";
+    el("companyName").value = c ? (c.name || "") : "";
+    el("companyTaxId").value = c ? (c.tax_id || "") : "";
+    el("companyPhone").value = c ? (c.phone || "") : "";
+    el("companyEmail").value = c ? (c.email || "") : "";
+    el("companyAddress").value = c ? (c.address || "") : "";
+  }
+
+  async function saveCompanyForm() {
+    const name = el("companyName").value.trim();
+    if (!name) return;
+    const payload = {
+      name,
+      tax_id: el("companyTaxId").value || null,
+      phone: el("companyPhone").value || null,
+      email: el("companyEmail").value || null,
+      address: el("companyAddress").value || null,
+    };
+    const id = el("companyId").value;
+    if (id) payload.id = id;
+    try {
+      const saved = await CLOUD.saveCompany(payload);
+      await loadCompanies();
+      if (!id) currentCompanyId = saved.id;
+      const s = STORE.getSettings(); s.lastCompanyId = currentCompanyId; STORE.saveSettings(s);
+      el("companyForm").classList.add("hidden");
+      populateCompanySwitcher(); renderCompanies();
+      toast(I18N.t("toast_saved"));
+    } catch (e) { alert(e.message || e); }
+  }
+
+  function openAuth() {
+    authMode = "login";
+    syncAuthModal();
+    el("authError").classList.add("hidden");
+    const configured = CLOUD && CLOUD.isConfigured();
+    el("authForm").classList.toggle("hidden", !configured);
+    el("authNotConfigured").classList.toggle("hidden", configured);
+    el("authModal").classList.remove("hidden");
+  }
+  function closeAuth() { el("authModal").classList.add("hidden"); }
+  function syncAuthModal() {
+    const reg = authMode === "register";
+    el("authTitle").textContent = I18N.t(reg ? "auth_register_title" : "auth_login_title");
+    el("authSubmit").textContent = I18N.t(reg ? "auth_submit_register" : "auth_submit_login");
+    el("authToggle").textContent = I18N.t(reg ? "auth_have_account" : "auth_no_account");
+  }
+  async function submitAuth() {
+    const email = el("authEmail").value.trim();
+    const password = el("authPassword").value;
+    const err = el("authError");
+    err.classList.add("hidden");
+    if (!email || !password) return;
+    try {
+      if (authMode === "register") {
+        await CLOUD.signUp(email, password);
+        toast(I18N.t("auth_check_email"));
+        authMode = "login"; syncAuthModal();
+      } else {
+        await CLOUD.signIn(email, password);
+        closeAuth();
+        await refreshAuthUI();
+      }
+    } catch (e) {
+      err.textContent = e.message || String(e);
+      err.classList.remove("hidden");
+    }
+  }
+
+  async function refreshAuthUI() {
+    const btn = el("accountBtn");
+    if (cloudOn()) {
+      btn.textContent = CLOUD.currentUser().email || I18N.t("account");
+      await loadCompanies();
+      populateCompanySwitcher();
+      if (currentCompanyId) applyCompanyToDoc();
+      fillInputs(); update();
+    } else {
+      btn.textContent = I18N.t("sign_in");
+      companies = []; currentCompanyId = null;
+      el("companySwitcher").classList.add("hidden");
+    }
+    populateClientPicker();
   }
 
   /* ============ History ============ */
-  function renderHistory() {
+  async function renderHistory() {
     const list = el("historyList");
-    const docs = STORE.getInvoices();
     list.innerHTML = "";
+    let docs;
+    try {
+      docs = cloudOn() ? (currentCompanyId ? await CLOUD.listInvoices(currentCompanyId) : []) : STORE.getInvoices();
+    } catch (e) {
+      list.innerHTML = `<div class="empty-state">${(e.message || e)}</div>`;
+      return;
+    }
     if (docs.length === 0) {
       list.innerHTML = `<div class="empty-state">${I18N.t("history_empty")}</div>`;
       return;
@@ -313,11 +506,20 @@
       const open = document.createElement("button");
       open.className = "secondary-btn small";
       open.textContent = I18N.t("col_load");
-      open.addEventListener("click", () => { doc = JSON.parse(JSON.stringify(d)); fillInputs(); update(); switchView("editor"); });
+      open.addEventListener("click", () => {
+        doc = JSON.parse(JSON.stringify(d));
+        if (cloudOn()) applyCompanyToDoc();
+        fillInputs(); update(); switchView("editor");
+      });
       const del = document.createElement("button");
       del.className = "link-btn";
       del.textContent = I18N.t("col_delete");
-      del.addEventListener("click", () => { if (confirm(I18N.t("confirm_delete"))) { STORE.deleteInvoice(d.id); renderHistory(); } });
+      del.addEventListener("click", async () => {
+        if (!confirm(I18N.t("confirm_delete"))) return;
+        if (cloudOn()) { try { await CLOUD.deleteInvoice(d.id); } catch (e) { alert(e.message || e); return; } }
+        else STORE.deleteInvoice(d.id);
+        renderHistory();
+      });
       rec.append(open, del);
       list.appendChild(rec);
     });
@@ -336,9 +538,14 @@
   function formatDateForCode(v) { if (!v) return "—"; try { return new Date(v).toLocaleDateString(I18N.locale()); } catch (e) { return v; } }
 
   /* ============ Clients ============ */
-  function populateClientPicker() {
+  async function getClientList() {
+    if (cloudOn()) return currentCompanyId ? await CLOUD.listClients(currentCompanyId) : [];
+    return STORE.getClients();
+  }
+  async function populateClientPicker() {
     const sel = el("clientPicker");
-    const clients = STORE.getClients();
+    let clients;
+    try { clients = await getClientList(); } catch (e) { clients = []; }
     sel.innerHTML = `<option value="">${I18N.t("choose_client")}</option>`;
     clients.forEach((c) => {
       const o = document.createElement("option");
@@ -347,10 +554,13 @@
       sel.appendChild(o);
     });
   }
-  function renderClients() {
+  async function renderClients() {
     const list = el("clientsList");
-    const clients = STORE.getClients();
     list.innerHTML = "";
+    let clients;
+    try { clients = await getClientList(); } catch (e) {
+      list.innerHTML = `<div class="empty-state">${(e.message || e)}</div>`; return;
+    }
     if (clients.length === 0) {
       list.innerHTML = `<div class="empty-state">${I18N.t("clients_empty")}</div>`;
       return;
@@ -370,7 +580,12 @@
       const del = document.createElement("button");
       del.className = "link-btn";
       del.textContent = I18N.t("col_delete");
-      del.addEventListener("click", () => { if (confirm(I18N.t("confirm_delete"))) { STORE.deleteClient(c.id); renderClients(); populateClientPicker(); } });
+      del.addEventListener("click", async () => {
+        if (!confirm(I18N.t("confirm_delete"))) return;
+        if (cloudOn()) { try { await CLOUD.deleteClient(c.id); } catch (e) { alert(e.message || e); return; } }
+        else STORE.deleteClient(c.id);
+        renderClients(); populateClientPicker();
+      });
       rec.append(use, del);
       list.appendChild(rec);
     });
@@ -406,6 +621,8 @@
     renderItems();
     renderPreview();
     populateClientPicker();
+    el("accountBtn").textContent = cloudOn() ? (CLOUD.currentUser().email || I18N.t("account")) : I18N.t("sign_in");
+    syncAuthModal();
   }
   function setTheme(theme) {
     settings.theme = theme === "dark" ? "dark" : "light";
@@ -445,12 +662,25 @@
   }
 
   /* ============ Save current doc ============ */
-  function saveCurrent() {
+  async function saveCurrent() {
     syncFromInputs();
-    const saved = STORE.saveInvoice(JSON.parse(JSON.stringify(doc)));
-    doc.id = saved.id;
-    persistCurrent();
-    toast(I18N.t("toast_saved"));
+    if (cloudOn()) {
+      if (!currentCompanyId) { switchView("companies"); toast(I18N.t("login_required_cloud")); return; }
+      try {
+        const saved = await CLOUD.saveInvoice(currentCompanyId, doc);
+        doc.id = saved.id;
+        doc.updatedAt = saved.updatedAt;
+        persistCurrent();
+        toast(I18N.t("toast_saved"));
+      } catch (e) {
+        alert("Save failed: " + (e.message || e));
+      }
+    } else {
+      const saved = STORE.saveInvoice(JSON.parse(JSON.stringify(doc)));
+      doc.id = saved.id;
+      persistCurrent();
+      toast(I18N.t("toast_saved"));
+    }
   }
 
   function newDoc() {
@@ -460,7 +690,7 @@
   }
 
   /* ============ Init ============ */
-  function init() {
+  async function init() {
     // settings
     setLang(settings.language || "en");
     setTheme(settings.theme || "light");
@@ -507,16 +737,27 @@
     el("removeLogo").addEventListener("click", () => { doc.logo = ""; el("logoInput").value = ""; update(); });
 
     // clients
-    el("clientPicker").addEventListener("change", (e) => {
-      const c = STORE.getClients().find((x) => x.id === e.target.value);
+    el("clientPicker").addEventListener("change", async (e) => {
+      const id = e.target.value;
+      if (!id) return;
+      const list = await getClientList();
+      const c = list.find((x) => x.id === id);
       if (c) { doc.toName = c.name; doc.toDetails = c.details; fillInputs(); update(); }
     });
-    el("saveClient").addEventListener("click", () => {
+    el("saveClient").addEventListener("click", async () => {
       const name = el("toName").value.trim();
       if (!name) return;
-      STORE.saveClient({ name, details: el("toDetails").value });
-      populateClientPicker();
-      toast(I18N.t("toast_client_saved"));
+      const details = el("toDetails").value;
+      try {
+        if (cloudOn()) {
+          if (!currentCompanyId) { toast(I18N.t("login_required_cloud")); return; }
+          await CLOUD.saveClient(currentCompanyId, { name, details });
+        } else {
+          STORE.saveClient({ name, details });
+        }
+        populateClientPicker();
+        toast(I18N.t("toast_client_saved"));
+      } catch (e) { alert(e.message || e); }
     });
 
     // actions
@@ -545,6 +786,31 @@
     el("exportData").addEventListener("click", exportData);
     el("importData").addEventListener("click", () => el("importFile").click());
     el("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importData(e.target.files[0]); });
+
+    // account / auth
+    el("accountBtn").addEventListener("click", async () => {
+      if (cloudOn()) {
+        if (confirm(I18N.t("confirm_signout"))) { await CLOUD.signOut(); await refreshAuthUI(); switchView("editor"); }
+      } else {
+        openAuth();
+      }
+    });
+    el("authClose").addEventListener("click", closeAuth);
+    el("authModal").addEventListener("click", (e) => { if (e.target === el("authModal")) closeAuth(); });
+    el("authToggle").addEventListener("click", () => { authMode = authMode === "login" ? "register" : "login"; syncAuthModal(); });
+    el("authSubmit").addEventListener("click", submitAuth);
+
+    // company controls
+    el("companySwitcher").addEventListener("change", (e) => selectCompany(e.target.value));
+    el("addCompany").addEventListener("click", () => openCompanyForm(null));
+    el("saveCompany").addEventListener("click", saveCompanyForm);
+
+    // cloud bootstrap
+    try {
+      await CLOUD.init();
+      CLOUD.onAuthChange(() => { refreshAuthUI(); });
+      await refreshAuthUI();
+    } catch (e) { /* stay in guest mode */ }
   }
 
   document.addEventListener("DOMContentLoaded", init);
