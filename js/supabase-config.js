@@ -16,6 +16,6 @@
  * (data saved only in this browser) and login/registration stay hidden.
  */
 window.MYGIR_SUPABASE = {
-  url: "YOUR_SUPABASE_URL",
-  anonKey: "YOUR_SUPABASE_ANON_KEY",
+  url: "https://fglgnvelinixsuiprhid.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnbGdudmVsaW5peHN1aXByaGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NTM4OTEsImV4cCI6MjA5NTEyOTg5MX0.wfS6iXivUy0O97TKqUNPe0EUuZuiRRp-ebJ00w0z9r4",
 };
