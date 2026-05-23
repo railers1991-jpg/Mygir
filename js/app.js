@@ -1127,7 +1127,7 @@
     try {
       if (CLOUD && CLOUD.isConfigured()) {
         await CLOUD.init();
-        CLOUD.onAuthChange(() => { refreshAuthUI(); });
+        CLOUD.onAuthChange(() => { refreshAuthUI().catch(function () {}); });
         await refreshAuthUI();
       }
     } catch (e) { console.error("Mygir cloud init error:", e); }
