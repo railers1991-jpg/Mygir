@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    /* Visible error catcher — surfaces JS errors on screen (useful on mobile
+       where the dev console is not available). Shows nothing unless an error
+       actually occurs. */
+    (function () {
+      function show(msg) {
+        try {
+          var box = document.getElementById("mygir-error");
+          if (!box) {
+            box = document.createElement("div");
+            box.id = "mygir-error";
+            box.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99999;" +
+              "background:#b91c1c;color:#fff;font:13px/1.45 monospace;padding:10px 36px 10px 14px;" +
+              "white-space:pre-wrap;max-height:45vh;overflow:auto;box-shadow:0 -2px 12px rgba(0,0,0,.3)";
+            var x = document.createElement("button");
+            x.textContent = "×";
+            x.style.cssText = "position:absolute;top:6px;right:10px;background:none;border:none;color:#fff;font-size:20px;cursor:pointer";
+            x.onclick = function () { box.remove(); };
+            (document.body || document.documentElement).appendChild(box);
+            box.appendChild(x);
+          }
+          var line = document.createElement("div");
+          line.textContent = "⚠ " + msg;
+          box.appendChild(line);
+        } catch (e) {}
+      }
+      window.addEventListener("error", function (e) {
+        show((e.message || "Script error") + (e.filename ? (" @ " + String(e.filename).split("/").pop() + ":" + e.lineno) : ""));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e.reason;
+        // Ignore non-actionable background rejections (e.g. network/socket
+        // events from third-party libraries) that have no real message.
+        if (r instanceof Event) return;
+        if (r && typeof r === "object" && !r.message) return;
+        show("Promise: " + ((r && (r.message || r)) || "unknown"));
+      });
+    })();
+  </script>
+  <title>Free Invoice & Quote Generator — No Sign-up, No Watermark | Mygir</title>
+  <meta name="description" content="Create professional invoices and quotes for free in your browser. No sign-up, no watermark, no ads. Multiple templates, per-item tax, saved clients, instant PDF. Your data never leaves your device." />
+  <meta name="keywords" content="free invoice generator, invoice maker, quote generator, estimate, freelance invoice, invoice pdf, no watermark invoice" />
+  <link rel="canonical" href="https://example.com/" />
+  <meta property="og:title" content="Free Invoice & Quote Generator — No Sign-up, No Watermark" />
+  <meta property="og:description" content="Professional invoices & quotes, free. Multiple templates, per-item tax, saved clients, instant PDF. Private: runs entirely in your browser." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Mygir Free Invoice Generator",
+    "applicationCategory": "BusinessApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "operatingSystem": "Any (browser-based)"
+  }
+  </script>
+</head>
+<body>
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="brand-mark">🧾</span> Mygir</div>
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-view="editor" data-i18n="tab_editor">Editor</button>
+        <button class="tab" data-view="dashboard" data-i18n="tab_dashboard">Dashboard</button>
+        <button class="tab" data-view="history" data-i18n="tab_history">History</button>
+        <button class="tab" data-view="clients" data-i18n="tab_clients">Clients</button>
+      </nav>
+      <div class="topbar-actions">
+        <select id="companySwitcher" class="ghost-btn hidden" title="Company"></select>
+        <button id="accountBtn" class="ghost-btn" title="Account">Sign in</button>
+        <button id="langToggle" class="ghost-btn" title="Language">EN</button>
+        <button id="themeToggle" class="ghost-btn" title="Theme">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ PUBLIC VIEWER BAR ============ -->
+  <div id="viewerBar" class="viewer-bar hidden">
+    <span class="viewer-brand">🧾 Mygir</span>
+    <div class="viewer-actions">
+      <button type="button" id="viewerDownload" class="secondary-btn small" data-i18n="download_pdf">Download PDF</button>
+      <a id="viewerCta" class="primary-btn small" href="app.html" data-i18n="viewer_cta">Create your own free invoice</a>
+    </div>
+  </div>
+
+  <!-- ============ EDITOR VIEW ============ -->
+  <main class="view active" id="view-editor">
+    <div class="layout">
+      <!-- FORM -->
+      <section class="panel form-panel">
+        <h1 class="seo-h1" data-i18n="seo_h1">Free Invoice Generator</h1>
+        <p class="seo-sub" data-i18n="seo_sub">Pick a template, fill in the details, and download a clean PDF.</p>
+
+        <fieldset>
+          <legend data-i18n="sec_doc">Document</legend>
+          <div class="row">
+            <label data-i18n="doc_type">Type
+              <select id="docType">
+                <option value="invoice" data-i18n="type_invoice">Invoice</option>
+                <option value="quote" data-i18n="type_quote">Quote / Estimate</option>
+              </select>
+            </label>
+            <label data-i18n="status">Status
+              <select id="docStatus">
+                <option value="draft" data-i18n="status_draft">Draft</option>
+                <option value="unpaid" data-i18n="status_unpaid">Unpaid</option>
+                <option value="paid" data-i18n="status_paid">Paid</option>
+              </select>
+            </label>
+          </div>
+          <label data-i18n="template">Template
+            <div class="template-picker" id="templatePicker">
+              <button type="button" class="tpl-chip active" data-tpl="modern" data-i18n="tpl_modern">Modern</button>
+              <button type="button" class="tpl-chip" data-tpl="classic" data-i18n="tpl_classic">Classic</button>
+              <button type="button" class="tpl-chip" data-tpl="minimal" data-i18n="tpl_minimal">Minimal</button>
+            </div>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_branding">Branding</legend>
+          <label data-i18n="accent">Accent color
+            <input type="color" id="accentColor" value="#2563eb" />
+          </label>
+          <label data-i18n="logo">Logo (optional)
+            <input type="file" id="logoInput" accept="image/*" />
+          </label>
+          <button type="button" id="removeLogo" class="link-btn hidden" data-i18n="remove_logo">Remove logo</button>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_from">From (you)</legend>
+          <input type="text" id="fromName" data-i18n-ph="from_name_ph" placeholder="Your name / company" />
+          <textarea id="fromDetails" data-i18n-ph="from_details_ph" placeholder="Address, email, phone…" rows="3"></textarea>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_to">Bill to (client)</legend>
+          <select id="clientPicker" class="full">
+            <option value="" data-i18n="choose_client">Choose saved client…</option>
+          </select>
+          <input type="text" id="toName" data-i18n-ph="to_name_ph" placeholder="Client name / company" />
+          <textarea id="toDetails" data-i18n-ph="to_details_ph" placeholder="Client address, email…" rows="3"></textarea>
+          <button type="button" id="saveClient" class="secondary-btn small" data-i18n="save_client">Save client</button>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_details">Details</legend>
+          <div class="row">
+            <label data-i18n="number">Number
+              <input type="text" id="invoiceNumber" placeholder="INV-0001" />
+            </label>
+            <label data-i18n="currency">Currency
+              <select id="currency">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="RUB">RUB (₽)</option>
+                <option value="KZT">KZT (₸)</option>
+                <option value="CNY">CNY (¥)</option>
+                <option value="JPY">JPY (¥)</option>
+                <option value="UAH">UAH (₴)</option>
+                <option value="INR">INR (₹)</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label data-i18n="issue_date">Issue date
+              <input type="date" id="issueDate" />
+            </label>
+            <label data-i18n="due_date">Due date
+              <input type="date" id="dueDate" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_items">Line items</legend>
+          <div id="itemsContainer"></div>
+          <button type="button" id="addItem" class="secondary-btn" data-i18n="add_item">+ Add item</button>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_totals">Totals</legend>
+          <label data-i18n="tax_label">Tax label
+            <input type="text" id="taxLabel" data-i18n-ph="tax_label_ph" placeholder="VAT / GST / Sales tax" />
+          </label>
+          <label data-i18n="global_discount">Global discount
+            <div class="row">
+              <input type="number" id="discountValue" placeholder="0" min="0" step="0.01" />
+              <select id="discountType">
+                <option value="percent" data-i18n="percent">%</option>
+                <option value="fixed" data-i18n="fixed">fixed</option>
+              </select>
+            </div>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="sec_notes">Notes</legend>
+          <textarea id="notes" data-i18n-ph="notes_ph" placeholder="Payment details…" rows="3"></textarea>
+        </fieldset>
+
+        <div class="actions">
+          <button type="button" id="saveDoc" class="primary-btn" data-i18n="save">Save</button>
+          <button type="button" id="downloadPdf" class="primary-btn ghost" data-i18n="download_pdf">Download PDF</button>
+          <button type="button" id="printBtn" class="secondary-btn" data-i18n="print">Print</button>
+          <button type="button" id="resetBtn" class="link-btn" data-i18n="reset">New / Reset</button>
+        </div>
+        <p class="privacy-note" data-i18n="privacy">🔒 Your data never leaves your device.</p>
+      </section>
+
+      <!-- PREVIEW -->
+      <section class="panel preview-panel">
+        <div class="preview-scroll">
+          <div id="invoice" class="invoice tpl-modern">
+            <div class="paid-stamp hidden" id="paidStamp" data-i18n="paid_stamp">PAID</div>
+            <div class="invoice-header">
+              <div class="invoice-brand">
+                <img id="pvLogo" class="pv-logo hidden" alt="Logo" />
+                <div id="pvFromName" class="pv-from-name"></div>
+                <div id="pvFromDetails" class="pv-muted pv-pre"></div>
+              </div>
+              <div class="invoice-title-block">
+                <div class="invoice-title" id="pvTitle">INVOICE</div>
+                <div class="pv-muted">#&nbsp;<span id="pvInvoiceNumber"></span></div>
+              </div>
+            </div>
+
+            <div class="invoice-meta">
+              <div class="bill-to">
+                <div class="pv-label" id="pvBillToLabel">Bill to</div>
+                <div id="pvToName" class="pv-strong"></div>
+                <div id="pvToDetails" class="pv-muted pv-pre"></div>
+              </div>
+              <div class="dates">
+                <div><span class="pv-label" id="pvIssuedLabel">Issued</span>: <span id="pvIssueDate">—</span></div>
+                <div><span class="pv-label" id="pvDueLabel">Due</span>: <span id="pvDueDate">—</span></div>
+              </div>
+            </div>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th class="col-desc" id="thDesc">Description</th>
+                  <th class="col-num" id="thQty">Qty</th>
+                  <th class="col-num" id="thPrice">Price</th>
+                  <th class="col-num" id="thTax">Tax %</th>
+                  <th class="col-num" id="thAmount">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="pvItems"></tbody>
+            </table>
+
+            <div class="totals">
+              <div class="totals-row"><span id="pvSubtotalLabel">Subtotal</span><span id="pvSubtotal">—</span></div>
+              <div class="totals-row"><span id="pvTaxLabel">Tax</span><span id="pvTax">—</span></div>
+              <div class="totals-row hidden" id="pvDiscountRow"><span id="pvDiscountLabel">Discount</span><span id="pvDiscount">—</span></div>
+              <div class="totals-row grand"><span id="pvTotalLabel">Total</span><span id="pvTotal">—</span></div>
+            </div>
+
+            <div id="pvNotesBlock" class="invoice-notes hidden">
+              <div class="pv-label" id="pvNotesLabel">Notes</div>
+              <div id="pvNotes" class="pv-pre"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============ DASHBOARD VIEW ============ -->
+  <main class="view" id="view-dashboard">
+    <div class="panel wide-panel">
+      <h2 data-i18n="dash_title">Dashboard</h2>
+      <div id="dashboardContent"></div>
+    </div>
+  </main>
+
+  <!-- ============ HISTORY VIEW ============ -->
+  <main class="view" id="view-history">
+    <div class="panel wide-panel">
+      <h2 data-i18n="history_title">Saved documents</h2>
+      <div class="history-toolbar">
+        <input type="text" id="historySearch" data-i18n-ph="search_ph" placeholder="Search…" />
+        <select id="historyFilter">
+          <option value="" data-i18n="filter_all">All statuses</option>
+          <option value="draft" data-i18n="status_draft">Draft</option>
+          <option value="unpaid" data-i18n="status_unpaid">Unpaid</option>
+          <option value="paid" data-i18n="status_paid">Paid</option>
+          <option value="overdue" data-i18n="status_overdue">Overdue</option>
+        </select>
+        <button type="button" id="exportCsv" class="secondary-btn small" data-i18n="export_csv">Export CSV</button>
+      </div>
+      <div id="historyList" class="record-list"></div>
+    </div>
+  </main>
+
+  <!-- ============ CLIENTS VIEW ============ -->
+  <main class="view" id="view-clients">
+    <div class="panel wide-panel">
+      <h2 data-i18n="clients_title">Saved clients</h2>
+      <div id="clientsList" class="record-list"></div>
+    </div>
+  </main>
+
+  <!-- ============ PROFILE VIEW ============ -->
+  <main class="view" id="view-profile">
+    <div class="panel wide-panel">
+      <h2 data-i18n="profile_title">Profile</h2>
+
+      <!-- Account -->
+      <fieldset>
+        <legend data-i18n="sec_account">Account</legend>
+        <p><span data-i18n="profile_signed_in">Signed in as</span>: <strong id="profileEmail">—</strong></p>
+        <button type="button" id="signOutBtn" class="secondary-btn" data-i18n="sign_out">Sign out</button>
+      </fieldset>
+
+      <!-- Plan -->
+      <fieldset id="planFieldset" class="hidden">
+        <legend data-i18n="plan">Plan</legend>
+        <p><span data-i18n="current_plan">Current plan</span>: <strong id="planValue">—</strong></p>
+        <p class="hint" data-i18n="free_limits_note">Free plan: 1 company and up to 5 saved documents.</p>
+        <button type="button" id="upgradeBtn" class="primary-btn" data-i18n="upgrade">Upgrade to Pro</button>
+      </fieldset>
+
+      <!-- Companies -->
+      <fieldset>
+        <legend data-i18n="companies_title">Your companies</legend>
+        <p class="hint hidden" id="companiesLoginHint" data-i18n="login_required_cloud">Sign in to manage companies.</p>
+        <div class="actions">
+          <button type="button" id="addCompany" class="secondary-btn" data-i18n="add_company">+ New company</button>
+        </div>
+        <div id="companyForm" class="company-form hidden">
+          <input type="hidden" id="companyId" />
+          <label data-i18n="company_name">Company name
+            <input type="text" id="companyName" data-i18n-ph="company_name" placeholder="Company name" />
+          </label>
+          <div class="row">
+            <label data-i18n="company_taxid">Tax ID
+              <input type="text" id="companyTaxId" />
+            </label>
+            <label data-i18n="company_phone">Phone
+              <input type="text" id="companyPhone" />
+            </label>
+          </div>
+          <label data-i18n="company_email">Email
+            <input type="email" id="companyEmail" />
+          </label>
+          <label data-i18n="company_address">Address
+            <textarea id="companyAddress" rows="2"></textarea>
+          </label>
+          <div class="actions">
+            <button type="button" id="saveCompany" class="primary-btn" data-i18n="save_company">Save company</button>
+          </div>
+        </div>
+        <div id="companiesList" class="record-list"></div>
+      </fieldset>
+
+      <!-- Preferences -->
+      <fieldset>
+        <legend data-i18n="preferences">Preferences</legend>
+        <label data-i18n="set_language">Language
+          <select id="setLanguage">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+          </select>
+        </label>
+        <label data-i18n="set_theme">Theme
+          <select id="setTheme">
+            <option value="light" data-i18n="theme_light">Light</option>
+            <option value="dark" data-i18n="theme_dark">Dark</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <!-- Data -->
+      <fieldset>
+        <legend data-i18n="set_data">Your data</legend>
+        <p class="hint" data-i18n="data_hint">Back up or move your invoices and clients between devices.</p>
+        <div class="actions">
+          <button type="button" id="exportData" class="secondary-btn" data-i18n="export_data">Export all data (JSON)</button>
+          <button type="button" id="importData" class="secondary-btn" data-i18n="import_data">Import data (JSON)</button>
+          <input type="file" id="importFile" accept="application/json" class="hidden" />
+        </div>
+      </fieldset>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p data-i18n="footer">Made with Mygir · 100% free · No account required.</p>
+  </footer>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- ============ AUTH MODAL ============ -->
+  <div id="authModal" class="modal-overlay hidden">
+    <div class="modal">
+      <button class="modal-close" id="authClose" aria-label="Close">×</button>
+      <h2 id="authTitle" data-i18n="auth_login_title">Sign in</h2>
+      <p id="authNotConfigured" class="hint hidden" data-i18n="auth_not_configured"></p>
+      <div id="authForm">
+        <label data-i18n="email">Email
+          <input type="email" id="authEmail" autocomplete="email" />
+        </label>
+        <label data-i18n="password">Password
+          <input type="password" id="authPassword" autocomplete="current-password" />
+        </label>
+        <p id="authError" class="auth-error hidden"></p>
+        <button type="button" id="authSubmit" class="primary-btn full-btn" data-i18n="auth_submit_login">Sign in</button>
+        <button type="button" id="authToggle" class="link-btn" data-i18n="auth_no_account">No account yet? Create one</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ UPGRADE MODAL ============ -->
+  <div id="upgradeModal" class="modal-overlay hidden">
+    <div class="modal">
+      <button class="modal-close" id="upgradeClose" aria-label="Close">×</button>
+      <h2 data-i18n="upgrade_title">Upgrade to Pro</h2>
+      <p class="hint" data-i18n="upgrade_desc">You reached the limits of the Free plan.</p>
+      <ul class="upgrade-benefits">
+        <li data-i18n="upgrade_b1">Unlimited companies</li>
+        <li data-i18n="upgrade_b2">Unlimited saved invoices</li>
+        <li data-i18n="upgrade_b3">Priority for upcoming features</li>
+      </ul>
+      <button type="button" id="upgradeCta" class="primary-btn full-btn" data-i18n="upgrade_cta">Upgrade</button>
+    </div>
+  </div>
+
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="js/i18n.js"></script>
+  <script defer src="js/store.js"></script>
+  <script defer src="js/supabase-config.js"></script>
+  <script defer src="js/cloud.js"></script>
+  <script defer src="js/app.js"></script>
+</body>
+</html>

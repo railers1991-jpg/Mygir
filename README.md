@@ -4,7 +4,8 @@
 Работает в браузере, без рекламы и водяных знаков. Опционально — облачные
 аккаунты с регистрацией, входом и базой данных (Supabase).
 
-**Демо:** https://railers1991-jpg.github.io/Mygir/
+**Лендинг:** https://railers1991-jpg.github.io/Mygir/
+**Приложение:** https://railers1991-jpg.github.io/Mygir/app.html
 
 ## Возможности
 
