@@ -31,6 +31,10 @@
     ru: { invoice: "СЧЁТ", quote: "СМЕТА" },
   };
   const NUM_PREFIX = { invoice: "INV-", quote: "QUO-" };
+  function numPrefix(type) {
+    const s = settings || {};
+    return type === "quote" ? (s.quotePrefix || "QUO-") : (s.invoicePrefix || "INV-");
+  }
 
   let settings = STORE.getSettings();
   let doc = loadCurrent();
@@ -51,11 +55,12 @@
       fromDetails: "",
       toName: "",
       toDetails: "",
-      number: NUM_PREFIX.invoice + pad(num),
+      number: numPrefix("invoice") + pad(num),
       currency: settings.currency || "USD",
       issueDate: new Date().toISOString().slice(0, 10),
       dueDate: "",
       taxLabel: settings.taxLabel || "VAT",
+      paymentUrl: "",
       discountValue: "",
       discountType: "percent",
       notes: "",
@@ -200,6 +205,7 @@
     doc.issueDate = el("issueDate").value;
     doc.dueDate = el("dueDate").value;
     doc.taxLabel = el("taxLabel").value;
+    doc.paymentUrl = el("paymentUrl").value;
     doc.discountValue = el("discountValue").value;
     doc.discountType = el("discountType").value;
     doc.notes = el("notes").value;
@@ -219,10 +225,12 @@
     el("issueDate").value = doc.issueDate;
     el("dueDate").value = doc.dueDate;
     el("taxLabel").value = doc.taxLabel;
+    el("paymentUrl").value = doc.paymentUrl || "";
     el("discountValue").value = doc.discountValue;
     el("discountType").value = doc.discountType;
     el("notes").value = doc.notes;
     setActiveTemplate(doc.template);
+    el("convertBtn").classList.toggle("hidden", doc.docType !== "quote");
     renderItems();
   }
 
@@ -299,6 +307,15 @@
       el("pvDiscountRow").classList.add("hidden");
     }
 
+    if (doc.paymentUrl && /^https?:\/\//i.test(doc.paymentUrl)) {
+      el("pvPayBlock").classList.remove("hidden");
+      const link = el("pvPayLink");
+      link.href = doc.paymentUrl;
+      link.textContent = I18N.t("pay_now");
+    } else {
+      el("pvPayBlock").classList.add("hidden");
+    }
+
     if (doc.notes && doc.notes.trim()) {
       el("pvNotesBlock").classList.remove("hidden");
       setText("pvNotesLabel", I18N.t("sec_notes"));
@@ -306,6 +323,9 @@
     } else {
       el("pvNotesBlock").classList.add("hidden");
     }
+
+    const convert = el("convertBtn");
+    if (convert) convert.classList.toggle("hidden", doc.docType !== "quote");
   }
 
   function update() {
@@ -323,37 +343,60 @@
     if (name === "clients") renderClients();
     if (name === "profile") renderProfile();
     if (name === "dashboard") renderDashboard();
+    if (name === "expenses") renderExpenses();
   }
 
   /* ============ Dashboard / analytics ============ */
+  function invoiceTax(d) {
+    let tax = 0;
+    (d.items || []).forEach((it) => { tax += (it.qty || 0) * (it.price || 0) * ((it.tax || 0) / 100); });
+    return tax;
+  }
+
   async function renderDashboard() {
     const host = el("dashboardContent");
     host.innerHTML = "";
-    let docs;
+    let docs, expenses;
     try {
       docs = cloudOn() ? (currentCompanyId ? await CLOUD.listInvoices(currentCompanyId) : []) : STORE.getInvoices();
+      expenses = await getExpenseList();
     } catch (e) {
       host.innerHTML = `<div class="empty-state">${escapeHtml(e.message || String(e))}</div>`;
       return;
     }
-    if (!docs.length) {
+
+    const from = el("dashFrom").value, to = el("dashTo").value;
+    const inRange = (dateStr) => {
+      const dt = (dateStr || "").slice(0, 10);
+      if (from && dt < from) return false;
+      if (to && dt > to) return false;
+      return true;
+    };
+    docs = docs.filter((d) => inRange(d.issueDate));
+    expenses = (expenses || []).filter((x) => inRange(x.date));
+
+    if (!docs.length && !expenses.length) {
       host.innerHTML = `<div class="empty-state">${I18N.t("dash_empty")}</div>`;
       return;
     }
 
     const byCur = {};
     const clientsSet = new Set();
+    function grp(cur) {
+      return byCur[cur] || (byCur[cur] = { invoiced: 0, paid: 0, outstanding: 0, tax: 0, expenses: 0, count: 0, monthly: {}, clients: {} });
+    }
     docs.forEach((d) => {
       const cur = d.currency || "USD";
       const total = invoiceTotal(d);
-      const g = byCur[cur] || (byCur[cur] = { invoiced: 0, paid: 0, outstanding: 0, count: 0, monthly: {}, clients: {} });
-      g.invoiced += total; g.count += 1;
+      const g = grp(cur);
+      g.invoiced += total; g.count += 1; g.tax += invoiceTax(d);
       if (d.status === "paid") g.paid += total; else g.outstanding += total;
       const m = (d.issueDate || "").slice(0, 7);
       if (m) g.monthly[m] = (g.monthly[m] || 0) + total;
       const cname = (d.toName || "").trim();
       if (cname) { g.clients[cname] = (g.clients[cname] || 0) + total; clientsSet.add(cname); }
     });
+    expenses.forEach((x) => { grp(x.currency || "USD").expenses += (parseFloat(x.amount) || 0); });
 
     // Top counters (currency-agnostic)
     const counters = document.createElement("div");
@@ -375,6 +418,9 @@
       cards.appendChild(card(I18N.t("dash_invoiced"), formatCur(g.invoiced, cur), "accent"));
       cards.appendChild(card(I18N.t("dash_paid"), formatCur(g.paid, cur), "good"));
       cards.appendChild(card(I18N.t("dash_outstanding"), formatCur(g.outstanding, cur), "warn"));
+      cards.appendChild(card(I18N.t("dash_tax"), formatCur(g.tax, cur)));
+      cards.appendChild(card(I18N.t("dash_expenses"), formatCur(g.expenses, cur), "warn"));
+      cards.appendChild(card(I18N.t("dash_profit"), formatCur(g.paid - g.expenses, cur), "good"));
       host.appendChild(cards);
 
       // Monthly bar chart (last 6 months present)
@@ -443,10 +489,75 @@
     catch (e) { return m; }
   }
 
+  /* ============ Expenses ============ */
+  async function getExpenseList() {
+    if (cloudOn()) return currentCompanyId ? await CLOUD.listExpenses(currentCompanyId) : [];
+    return STORE.getExpenses();
+  }
+  async function renderExpenses() {
+    const list = el("expensesList");
+    list.innerHTML = "";
+    if (!el("expDate").value) el("expDate").value = todayISO();
+    let exps;
+    try { exps = await getExpenseList(); }
+    catch (e) { list.innerHTML = `<div class="empty-state">${escapeHtml(e.message || String(e))}</div>`; return; }
+    if (!exps.length) { list.innerHTML = `<div class="empty-state">${I18N.t("expenses_empty")}</div>`; return; }
+    exps.forEach((x) => {
+      const rec = document.createElement("div");
+      rec.className = "record";
+      rec.innerHTML =
+        `<div class="record-main">
+           <div class="record-title">${escapeHtml(x.description || "—")}</div>
+           <div class="record-sub">${escapeHtml(x.date || "")}</div>
+         </div>
+         <span class="record-amount">${formatCur(parseFloat(x.amount) || 0, x.currency)}</span>`;
+      rec.append(mkBtn(I18N.t("col_delete"), "link-btn", async () => {
+        if (!confirm(I18N.t("confirm_delete"))) return;
+        if (cloudOn()) { try { await CLOUD.deleteExpense(x.id); } catch (e) { alert(e.message || e); return; } }
+        else STORE.deleteExpense(x.id);
+        renderExpenses();
+      }));
+      list.appendChild(rec);
+    });
+  }
+  async function addExpense() {
+    const amount = parseFloat(el("expAmount").value) || 0;
+    const exp = {
+      date: el("expDate").value || todayISO(),
+      description: el("expDesc").value,
+      amount: amount,
+      currency: el("expCurrency").value,
+    };
+    if (!amount && !exp.description.trim()) return;
+    try {
+      if (cloudOn()) {
+        if (!currentCompanyId) { toast(I18N.t("login_required_cloud")); return; }
+        await CLOUD.saveExpense(currentCompanyId, exp);
+      } else {
+        STORE.saveExpense(exp);
+      }
+      el("expDesc").value = ""; el("expAmount").value = "";
+      renderExpenses();
+      toast(I18N.t("toast_saved"));
+    } catch (e) { alert(e.message || e); }
+  }
+
+  function convertToInvoice() {
+    if (doc.docType !== "quote") return;
+    doc.docType = "invoice";
+    doc.id = null; doc.publicId = ""; doc.isPublic = false;
+    doc.status = "draft";
+    doc.number = numPrefix("invoice") + pad(STORE.nextNumber());
+    fillInputs(); update();
+    toast(I18N.t("convert_to_invoice"));
+  }
+
   function renderProfile() {
     el("profileEmail").textContent = (cloudOn() && CLOUD.currentUser().email) || "—";
     el("setLanguage").value = settings.language || "en";
     el("setTheme").value = settings.theme || "light";
+    el("invoicePrefix").value = settings.invoicePrefix || "INV-";
+    el("quotePrefix").value = settings.quotePrefix || "QUO-";
     renderPlan();
     renderCompanies();
   }
@@ -459,6 +570,7 @@
     const lines = [co.address, co.email, co.phone, co.tax_id].filter(Boolean);
     doc.fromDetails = lines.join("\n");
     if (co.accent_color) doc.accentColor = co.accent_color;
+    if (!doc.paymentUrl && co.payment_url) doc.paymentUrl = co.payment_url;
   }
 
   async function loadCompanies() {
@@ -550,6 +662,7 @@
     el("companyPhone").value = c ? (c.phone || "") : "";
     el("companyEmail").value = c ? (c.email || "") : "";
     el("companyAddress").value = c ? (c.address || "") : "";
+    el("companyPaymentUrl").value = c ? (c.payment_url || "") : "";
   }
 
   async function saveCompanyForm() {
@@ -567,6 +680,7 @@
       phone: el("companyPhone").value || null,
       email: el("companyEmail").value || null,
       address: el("companyAddress").value || null,
+      payment_url: el("companyPaymentUrl").value || null,
     };
     if (id) payload.id = id;
     try {
@@ -1060,6 +1174,7 @@
     el("saveDoc").addEventListener("click", saveCurrent);
     el("downloadPdf").addEventListener("click", downloadPdf);
     el("printBtn").addEventListener("click", () => window.print());
+    el("convertBtn").addEventListener("click", convertToInvoice);
     el("resetBtn").addEventListener("click", () => { if (confirm(I18N.t("confirm_reset"))) newDoc(); });
 
     // tabs
@@ -1072,6 +1187,15 @@
     el("historySearch").addEventListener("input", renderHistoryList);
     el("historyFilter").addEventListener("change", renderHistoryList);
     el("exportCsv").addEventListener("click", exportHistoryCsv);
+
+    // expenses + dashboard period
+    el("addExpense").addEventListener("click", addExpense);
+    el("dashFrom").addEventListener("change", renderDashboard);
+    el("dashTo").addEventListener("change", renderDashboard);
+
+    // numbering settings
+    el("invoicePrefix").addEventListener("change", (e) => { settings.invoicePrefix = e.target.value || "INV-"; STORE.saveSettings(settings); });
+    el("quotePrefix").addEventListener("change", (e) => { settings.quotePrefix = e.target.value || "QUO-"; STORE.saveSettings(settings); });
 
     // top toggles
     el("langToggle").addEventListener("click", () => {

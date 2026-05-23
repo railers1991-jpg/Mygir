@@ -23,6 +23,7 @@ create table if not exists public.companies (
   accent_color      text default '#2563eb',
   default_currency  text default 'USD',
   default_tax_label text default 'VAT',
+  payment_url       text,
   created_at        timestamptz not null default now()
 );
 
@@ -54,6 +55,7 @@ create table if not exists public.invoices (
   issue_date      date,
   due_date        date,
   tax_label       text,
+  payment_url     text,
   discount_value  numeric default 0,
   discount_type   text default 'percent',
   notes           text,
@@ -65,18 +67,36 @@ create table if not exists public.invoices (
   updated_at      timestamptz not null default now()
 );
 
+-- ---------- Expenses ----------
+create table if not exists public.expenses (
+  id          uuid primary key default gen_random_uuid(),
+  owner       uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  company_id  uuid not null references public.companies (id) on delete cascade,
+  date        date,
+  description text,
+  amount      numeric not null default 0,
+  currency    text default 'USD',
+  created_at  timestamptz not null default now()
+);
+
 create index if not exists invoices_company_idx on public.invoices (company_id, updated_at desc);
 create index if not exists clients_company_idx on public.clients (company_id);
+create index if not exists expenses_company_idx on public.expenses (company_id, date desc);
 
 -- ---------- Row Level Security ----------
 alter table public.profiles  enable row level security;
 alter table public.companies enable row level security;
 alter table public.clients   enable row level security;
 alter table public.invoices  enable row level security;
+alter table public.expenses  enable row level security;
 
 drop policy if exists profiles_owner_all on public.profiles;
 create policy profiles_owner_all on public.profiles
   for all using (auth.uid() = id) with check (auth.uid() = id);
+
+drop policy if exists expenses_owner_all on public.expenses;
+create policy expenses_owner_all on public.expenses
+  for all using (auth.uid() = owner) with check (auth.uid() = owner);
 
 drop policy if exists companies_owner_all on public.companies;
 create policy companies_owner_all on public.companies

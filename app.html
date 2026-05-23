@@ -76,6 +76,7 @@
         <button class="tab" data-view="dashboard" data-i18n="tab_dashboard">Dashboard</button>
         <button class="tab" data-view="history" data-i18n="tab_history">History</button>
         <button class="tab" data-view="clients" data-i18n="tab_clients">Clients</button>
+        <button class="tab" data-view="expenses" data-i18n="tab_expenses">Expenses</button>
       </nav>
       <div class="topbar-actions">
         <select id="companySwitcher" class="ghost-btn hidden" title="Company"></select>
@@ -209,6 +210,11 @@
         </fieldset>
 
         <fieldset>
+          <legend data-i18n="payment_link">Payment link</legend>
+          <input type="url" id="paymentUrl" data-i18n-ph="payment_link_ph" placeholder="https://…" />
+        </fieldset>
+
+        <fieldset>
           <legend data-i18n="sec_notes">Notes</legend>
           <textarea id="notes" data-i18n-ph="notes_ph" placeholder="Payment details…" rows="3"></textarea>
         </fieldset>
@@ -217,6 +223,7 @@
           <button type="button" id="saveDoc" class="primary-btn" data-i18n="save">Save</button>
           <button type="button" id="downloadPdf" class="primary-btn ghost" data-i18n="download_pdf">Download PDF</button>
           <button type="button" id="printBtn" class="secondary-btn" data-i18n="print">Print</button>
+          <button type="button" id="convertBtn" class="secondary-btn hidden" data-i18n="convert_to_invoice">Convert to invoice</button>
           <button type="button" id="resetBtn" class="link-btn" data-i18n="reset">New / Reset</button>
         </div>
         <p class="privacy-note" data-i18n="privacy">🔒 Your data never leaves your device.</p>
@@ -271,6 +278,10 @@
               <div class="totals-row grand"><span id="pvTotalLabel">Total</span><span id="pvTotal">—</span></div>
             </div>
 
+            <div id="pvPayBlock" class="invoice-pay hidden">
+              <a id="pvPayLink" class="pay-btn" target="_blank" rel="noopener" data-i18n="pay_now">Pay now</a>
+            </div>
+
             <div id="pvNotesBlock" class="invoice-notes hidden">
               <div class="pv-label" id="pvNotesLabel">Notes</div>
               <div id="pvNotes" class="pv-pre"></div>
@@ -285,7 +296,30 @@
   <main class="view" id="view-dashboard">
     <div class="panel wide-panel">
       <h2 data-i18n="dash_title">Dashboard</h2>
+      <div class="dash-period">
+        <label data-i18n="dash_from">From <input type="date" id="dashFrom" /></label>
+        <label data-i18n="dash_to">To <input type="date" id="dashTo" /></label>
+      </div>
       <div id="dashboardContent"></div>
+    </div>
+  </main>
+
+  <!-- ============ EXPENSES VIEW ============ -->
+  <main class="view" id="view-expenses">
+    <div class="panel wide-panel">
+      <h2 data-i18n="expenses_title">Expenses</h2>
+      <div class="expense-form">
+        <input type="date" id="expDate" />
+        <input type="text" id="expDesc" data-i18n-ph="exp_desc" placeholder="Description" />
+        <input type="number" id="expAmount" min="0" step="0.01" data-i18n-ph="exp_amount" placeholder="Amount" />
+        <select id="expCurrency">
+          <option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option>
+          <option value="RUB">RUB</option><option value="KZT">KZT</option><option value="CNY">CNY</option>
+          <option value="JPY">JPY</option><option value="UAH">UAH</option><option value="INR">INR</option>
+        </select>
+        <button type="button" id="addExpense" class="primary-btn" data-i18n="add_expense">+ Add expense</button>
+      </div>
+      <div id="expensesList" class="record-list"></div>
     </div>
   </main>
 
@@ -362,6 +396,9 @@
           <label data-i18n="company_address">Address
             <textarea id="companyAddress" rows="2"></textarea>
           </label>
+          <label data-i18n="payment_link">Payment link
+            <input type="url" id="companyPaymentUrl" data-i18n-ph="payment_link_ph" placeholder="https://…" />
+          </label>
           <div class="actions">
             <button type="button" id="saveCompany" class="primary-btn" data-i18n="save_company">Save company</button>
           </div>
@@ -384,6 +421,19 @@
             <option value="dark" data-i18n="theme_dark">Dark</option>
           </select>
         </label>
+      </fieldset>
+
+      <!-- Numbering -->
+      <fieldset>
+        <legend data-i18n="sec_numbering">Numbering</legend>
+        <div class="row">
+          <label data-i18n="invoice_prefix">Invoice prefix
+            <input type="text" id="invoicePrefix" placeholder="INV-" />
+          </label>
+          <label data-i18n="quote_prefix">Quote prefix
+            <input type="text" id="quotePrefix" placeholder="QUO-" />
+          </label>
+        </div>
       </fieldset>
 
       <!-- Data -->

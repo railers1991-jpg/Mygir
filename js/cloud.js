@@ -70,6 +70,7 @@ window.MYGIR_CLOUD = (function () {
       issue_date: nullIfEmpty(doc.issueDate),
       due_date: nullIfEmpty(doc.dueDate),
       tax_label: doc.taxLabel || null,
+      payment_url: doc.paymentUrl || null,
       discount_value: numOrZero(doc.discountValue),
       discount_type: doc.discountType || "percent",
       notes: doc.notes || null,
@@ -92,6 +93,7 @@ window.MYGIR_CLOUD = (function () {
       issueDate: row.issue_date || "",
       dueDate: row.due_date || "",
       taxLabel: row.tax_label || "",
+      paymentUrl: row.payment_url || "",
       discountValue: row.discount_value != null ? String(row.discount_value) : "",
       discountType: row.discount_type || "percent",
       notes: row.notes || "",
@@ -196,6 +198,24 @@ window.MYGIR_CLOUD = (function () {
     return count || 0;
   }
 
+  /* ---------- Expenses ---------- */
+  async function listExpenses(companyId) {
+    const { data, error } = await db.from("expenses").select("*").eq("company_id", companyId).order("date", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+  async function saveExpense(companyId, exp) {
+    const { data, error } = await db.from("expenses")
+      .insert({ company_id: companyId, date: exp.date || null, description: exp.description || null, amount: parseFloat(exp.amount) || 0, currency: exp.currency || "USD" })
+      .select().single();
+    if (error) throw error;
+    return data;
+  }
+  async function deleteExpense(id) {
+    const { error } = await db.from("expenses").delete().eq("id", id);
+    if (error) throw error;
+  }
+
   /* ---------- Plan (free / pro) ---------- */
   async function getPlan() {
     if (!user) return "free";
@@ -213,6 +233,7 @@ window.MYGIR_CLOUD = (function () {
     listClients, saveClient, deleteClient,
     listInvoices, saveInvoice, deleteInvoice, countInvoices,
     makePublic, getPublicInvoice,
+    listExpenses, saveExpense, deleteExpense,
     getPlan,
     docToRow, rowToDoc,
   };

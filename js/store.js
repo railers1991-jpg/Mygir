@@ -6,6 +6,7 @@ window.MYGIR_STORE = (function () {
     invoices: "mygir_invoices",
     clients: "mygir_clients",
     settings: "mygir_settings",
+    expenses: "mygir_expenses",
   };
 
   function read(key, fallback) {
@@ -43,6 +44,8 @@ window.MYGIR_STORE = (function () {
         currency: "USD",
         taxLabel: "VAT",
         lastNumber: 0,
+        invoicePrefix: "INV-",
+        quotePrefix: "QUO-",
       });
     },
     saveSettings(s) { write(KEYS.settings, s); },
@@ -69,6 +72,20 @@ window.MYGIR_STORE = (function () {
     },
     getInvoice(id) { return this.getInvoices().find((d) => d.id === id) || null; },
 
+    /* ----- Expenses ----- */
+    getExpenses() { return read(KEYS.expenses, []); },
+    saveExpense(exp) {
+      const list = this.getExpenses();
+      if (!exp.id) exp.id = uid();
+      const idx = list.findIndex((e) => e.id === exp.id);
+      if (idx >= 0) list[idx] = exp; else list.unshift(exp);
+      write(KEYS.expenses, list);
+      return exp;
+    },
+    deleteExpense(id) {
+      write(KEYS.expenses, this.getExpenses().filter((e) => e.id !== id));
+    },
+
     /* ----- Clients ----- */
     getClients() { return read(KEYS.clients, []); },
     saveClient(client) {
@@ -87,11 +104,12 @@ window.MYGIR_STORE = (function () {
     exportAll() {
       return {
         _app: "mygir",
-        _version: "0.2",
+        _version: "0.5",
         exportedAt: new Date().toISOString(),
         settings: this.getSettings(),
         invoices: this.getInvoices(),
         clients: this.getClients(),
+        expenses: this.getExpenses(),
       };
     },
     importAll(data) {
@@ -99,6 +117,7 @@ window.MYGIR_STORE = (function () {
       if (data.settings) write(KEYS.settings, data.settings);
       if (Array.isArray(data.invoices)) write(KEYS.invoices, data.invoices);
       if (Array.isArray(data.clients)) write(KEYS.clients, data.clients);
+      if (Array.isArray(data.expenses)) write(KEYS.expenses, data.expenses);
     },
   };
 })();
