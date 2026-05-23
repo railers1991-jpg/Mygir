@@ -216,6 +216,15 @@ window.MYGIR_CLOUD = (function () {
     if (error) throw error;
   }
 
+  /* ---------- Visit counter ---------- */
+  async function getViewStats() {
+    const totalRes = await db.from("page_views").select("id", { count: "exact", head: true });
+    if (totalRes.error) throw totalRes.error;
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const todayRes = await db.from("page_views").select("id", { count: "exact", head: true }).gte("created_at", start.toISOString());
+    return { total: totalRes.count || 0, today: (todayRes.count || 0) };
+  }
+
   /* ---------- Plan (free / pro) ---------- */
   async function getPlan() {
     if (!user) return "free";
@@ -234,6 +243,7 @@ window.MYGIR_CLOUD = (function () {
     listInvoices, saveInvoice, deleteInvoice, countInvoices,
     makePublic, getPublicInvoice,
     listExpenses, saveExpense, deleteExpense,
+    getViewStats,
     getPlan,
     docToRow, rowToDoc,
   };

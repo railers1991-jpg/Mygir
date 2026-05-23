@@ -200,6 +200,8 @@ window.MYGIR_I18N = (function () {
       dash_period: "Period",
       dash_from: "From",
       dash_to: "To",
+      dash_visits_total: "Site visits",
+      dash_visits_today: "Visits today",
     },
     ru: {
       tagline: "Бесплатный генератор счетов и смет — без регистрации и водяных знаков.",
@@ -398,6 +400,8 @@ window.MYGIR_I18N = (function () {
       dash_period: "Период",
       dash_from: "С",
       dash_to: "По",
+      dash_visits_total: "Заходов всего",
+      dash_visits_today: "Заходов сегодня",
     },
   };
 

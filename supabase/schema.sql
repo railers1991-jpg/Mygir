@@ -3,6 +3,22 @@
 -- Every row is owned by the authenticated user. Row Level Security (RLS)
 -- guarantees a user can only ever read/write their own data.
 
+-- ---------- Page views (simple visit counter) ----------
+create table if not exists public.page_views (
+  id         uuid primary key default gen_random_uuid(),
+  path       text,
+  created_at timestamptz not null default now()
+);
+alter table public.page_views enable row level security;
+-- Anyone (even anonymous visitors) may record a view…
+drop policy if exists page_views_insert on public.page_views;
+create policy page_views_insert on public.page_views
+  for insert with check (true);
+-- …but only signed-in users (you) can read the counts.
+drop policy if exists page_views_select on public.page_views;
+create policy page_views_select on public.page_views
+  for select using (auth.role() = 'authenticated');
+
 -- ---------- Profiles (plan: free / pro) ----------
 create table if not exists public.profiles (
   id         uuid primary key references auth.users (id) on delete cascade,

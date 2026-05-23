@@ -375,8 +375,20 @@
     docs = docs.filter((d) => inRange(d.issueDate));
     expenses = (expenses || []).filter((x) => inRange(x.date));
 
+    // Visit counter (signed-in only; whole-site, ignores date filter)
+    if (cloudOn()) {
+      try {
+        const v = await CLOUD.getViewStats();
+        const vis = document.createElement("div");
+        vis.className = "dash-cards";
+        vis.appendChild(card(I18N.t("dash_visits_total"), String(v.total), "accent"));
+        vis.appendChild(card(I18N.t("dash_visits_today"), String(v.today)));
+        host.appendChild(vis);
+      } catch (e) { /* counter table may not exist yet — ignore */ }
+    }
+
     if (!docs.length && !expenses.length) {
-      host.innerHTML = `<div class="empty-state">${I18N.t("dash_empty")}</div>`;
+      host.innerHTML += `<div class="empty-state">${I18N.t("dash_empty")}</div>`;
       return;
     }
 
