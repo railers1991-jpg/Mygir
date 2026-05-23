@@ -148,6 +148,11 @@ window.MYGIR_I18N = (function () {
       free_limits_note: "Free plan: 1 company and up to 5 saved documents.",
       limit_companies: "Free plan allows 1 company. Upgrade to Pro for unlimited companies.",
       limit_invoices: "Free plan allows 5 saved documents. Upgrade to Pro for unlimited.",
+
+      profile_title: "Profile",
+      profile_signed_in: "Signed in as",
+      preferences: "Preferences",
+      sec_account: "Account",
     },
     ru: {
       tagline: "Бесплатный генератор счетов и смет — без регистрации и водяных знаков.",
@@ -294,6 +299,11 @@ window.MYGIR_I18N = (function () {
       free_limits_note: "Бесплатный тариф: 1 фирма и до 5 сохранённых документов.",
       limit_companies: "На бесплатном тарифе доступна 1 фирма. Перейдите на Pro для безлимита.",
       limit_invoices: "На бесплатном тарифе можно сохранить 5 документов. Перейдите на Pro для безлимита.",
+
+      profile_title: "Профиль",
+      profile_signed_in: "Вы вошли как",
+      preferences: "Настройки",
+      sec_account: "Аккаунт",
     },
   };
 

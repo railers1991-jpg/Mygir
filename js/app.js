@@ -311,7 +311,15 @@
     el("view-" + name).classList.add("active");
     if (name === "history") renderHistory();
     if (name === "clients") renderClients();
-    if (name === "companies") renderCompanies();
+    if (name === "profile") renderProfile();
+  }
+
+  function renderProfile() {
+    el("profileEmail").textContent = (cloudOn() && CLOUD.currentUser().email) || "—";
+    el("setLanguage").value = settings.language || "en";
+    el("setTheme").value = settings.theme || "light";
+    renderPlan();
+    renderCompanies();
   }
 
   /* ============ Companies + auth (cloud) ============ */
@@ -819,12 +827,12 @@
     el("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importData(e.target.files[0]); });
 
     // account / auth
-    el("accountBtn").addEventListener("click", async () => {
-      if (cloudOn()) {
-        if (confirm(I18N.t("confirm_signout"))) { await CLOUD.signOut(); await refreshAuthUI(); switchView("editor"); }
-      } else {
-        openAuth();
-      }
+    el("accountBtn").addEventListener("click", () => {
+      if (cloudOn()) switchView("profile");
+      else openAuth();
+    });
+    el("signOutBtn").addEventListener("click", async () => {
+      if (confirm(I18N.t("confirm_signout"))) { await CLOUD.signOut(); await refreshAuthUI(); switchView("editor"); }
     });
     el("authClose").addEventListener("click", closeAuth);
     el("authModal").addEventListener("click", (e) => { if (e.target === el("authModal")) closeAuth(); });

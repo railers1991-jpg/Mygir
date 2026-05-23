@@ -69,8 +69,6 @@
         <button class="tab active" data-view="editor" data-i18n="tab_editor">Editor</button>
         <button class="tab" data-view="history" data-i18n="tab_history">History</button>
         <button class="tab" data-view="clients" data-i18n="tab_clients">Clients</button>
-        <button class="tab" data-view="companies" data-i18n="tab_companies">Companies</button>
-        <button class="tab" data-view="settings" data-i18n="tab_settings">Settings</button>
       </nav>
       <div class="topbar-actions">
         <select id="companySwitcher" class="ghost-btn hidden" title="Company"></select>
@@ -283,68 +281,77 @@
     </div>
   </main>
 
-  <!-- ============ COMPANIES VIEW ============ -->
-  <main class="view" id="view-companies">
+  <!-- ============ PROFILE VIEW ============ -->
+  <main class="view" id="view-profile">
     <div class="panel wide-panel">
-      <h2 data-i18n="companies_title">Your companies</h2>
-      <p class="hint hidden" id="companiesLoginHint" data-i18n="login_required_cloud">Sign in to manage companies.</p>
-      <div class="actions">
-        <button type="button" id="addCompany" class="secondary-btn" data-i18n="add_company">+ New company</button>
-      </div>
+      <h2 data-i18n="profile_title">Profile</h2>
 
-      <div id="companyForm" class="company-form hidden">
-        <input type="hidden" id="companyId" />
-        <fieldset>
-          <legend data-i18n="company_name">Company name</legend>
-          <input type="text" id="companyName" data-i18n-ph="company_name" placeholder="Company name" />
-        </fieldset>
-        <div class="row">
-          <label data-i18n="company_taxid">Tax ID
-            <input type="text" id="companyTaxId" />
-          </label>
-          <label data-i18n="company_phone">Phone
-            <input type="text" id="companyPhone" />
-          </label>
-        </div>
-        <label data-i18n="company_email">Email
-          <input type="email" id="companyEmail" />
-        </label>
-        <label data-i18n="company_address">Address
-          <textarea id="companyAddress" rows="2"></textarea>
-        </label>
-        <div class="actions">
-          <button type="button" id="saveCompany" class="primary-btn" data-i18n="save_company">Save company</button>
-        </div>
-      </div>
+      <!-- Account -->
+      <fieldset>
+        <legend data-i18n="sec_account">Account</legend>
+        <p><span data-i18n="profile_signed_in">Signed in as</span>: <strong id="profileEmail">—</strong></p>
+        <button type="button" id="signOutBtn" class="secondary-btn" data-i18n="sign_out">Sign out</button>
+      </fieldset>
 
-      <div id="companiesList" class="record-list"></div>
-    </div>
-  </main>
-
-  <!-- ============ SETTINGS VIEW ============ -->
-  <main class="view" id="view-settings">
-    <div class="panel wide-panel">
-      <h2 data-i18n="settings_title">Settings</h2>
+      <!-- Plan -->
       <fieldset id="planFieldset" class="hidden">
         <legend data-i18n="plan">Plan</legend>
         <p><span data-i18n="current_plan">Current plan</span>: <strong id="planValue">—</strong></p>
         <p class="hint" data-i18n="free_limits_note">Free plan: 1 company and up to 5 saved documents.</p>
         <button type="button" id="upgradeBtn" class="primary-btn" data-i18n="upgrade">Upgrade to Pro</button>
       </fieldset>
+
+      <!-- Companies -->
       <fieldset>
-        <legend data-i18n="set_language">Language</legend>
-        <select id="setLanguage">
-          <option value="en">English</option>
-          <option value="ru">Русский</option>
-        </select>
+        <legend data-i18n="companies_title">Your companies</legend>
+        <p class="hint hidden" id="companiesLoginHint" data-i18n="login_required_cloud">Sign in to manage companies.</p>
+        <div class="actions">
+          <button type="button" id="addCompany" class="secondary-btn" data-i18n="add_company">+ New company</button>
+        </div>
+        <div id="companyForm" class="company-form hidden">
+          <input type="hidden" id="companyId" />
+          <label data-i18n="company_name">Company name
+            <input type="text" id="companyName" data-i18n-ph="company_name" placeholder="Company name" />
+          </label>
+          <div class="row">
+            <label data-i18n="company_taxid">Tax ID
+              <input type="text" id="companyTaxId" />
+            </label>
+            <label data-i18n="company_phone">Phone
+              <input type="text" id="companyPhone" />
+            </label>
+          </div>
+          <label data-i18n="company_email">Email
+            <input type="email" id="companyEmail" />
+          </label>
+          <label data-i18n="company_address">Address
+            <textarea id="companyAddress" rows="2"></textarea>
+          </label>
+          <div class="actions">
+            <button type="button" id="saveCompany" class="primary-btn" data-i18n="save_company">Save company</button>
+          </div>
+        </div>
+        <div id="companiesList" class="record-list"></div>
       </fieldset>
+
+      <!-- Preferences -->
       <fieldset>
-        <legend data-i18n="set_theme">Theme</legend>
-        <select id="setTheme">
-          <option value="light" data-i18n="theme_light">Light</option>
-          <option value="dark" data-i18n="theme_dark">Dark</option>
-        </select>
+        <legend data-i18n="preferences">Preferences</legend>
+        <label data-i18n="set_language">Language
+          <select id="setLanguage">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+          </select>
+        </label>
+        <label data-i18n="set_theme">Theme
+          <select id="setTheme">
+            <option value="light" data-i18n="theme_light">Light</option>
+            <option value="dark" data-i18n="theme_dark">Dark</option>
+          </select>
+        </label>
       </fieldset>
+
+      <!-- Data -->
       <fieldset>
         <legend data-i18n="set_data">Your data</legend>
         <p class="hint" data-i18n="data_hint">Back up or move your invoices and clients between devices.</p>
