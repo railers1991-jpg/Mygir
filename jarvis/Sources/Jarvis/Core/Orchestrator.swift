@@ -10,6 +10,7 @@ public final class Orchestrator: ObservableObject {
     private var llm: LLMProvider
     private let memory: MemoryStore
     private let settings: JarvisSettings
+    private let synthesizer = SystemSpeechSynthesizer()
     private var settingsCancellable: AnyCancellable?
 
     public init(settings: JarvisSettings, memory: MemoryStore) {
@@ -24,7 +25,7 @@ public final class Orchestrator: ObservableObject {
             if stored.isEmpty {
                 let greeting = ChatMessage(
                     role: .system,
-                    content: "Привет. Я — Jarvis (v0.2). Открой Settings (⌘,) чтобы выбрать провайдера и вставить ключ."
+                    content: "Привет. Я — Jarvis (v0.3). Нажми кнопку микрофона или ⌘L, чтобы говорить."
                 )
                 messages = [greeting]
                 await memory.append(greeting)
@@ -33,7 +34,6 @@ public final class Orchestrator: ObservableObject {
             }
         }
 
-        // Перетекивание настроек: при смене провайдера/ключа — пересобираем LLM.
         settingsCancellable = Publishers.Merge4(
             settings.$provider.map { _ in () },
             settings.$anthropicAPIKey.map { _ in () },
@@ -79,6 +79,10 @@ public final class Orchestrator: ObservableObject {
             }
             if let idx = messages.firstIndex(where: { $0.id == assistantId }) {
                 await memory.append(messages[idx])
+                if settings.ttsEnabled {
+                    let voiceID = settings.ttsVoiceID.isEmpty ? nil : settings.ttsVoiceID
+                    synthesizer.speak(messages[idx].content, voiceID: voiceID)
+                }
             }
         } catch {
             if let idx = messages.firstIndex(where: { $0.id == assistantId }) {
@@ -91,7 +95,12 @@ public final class Orchestrator: ObservableObject {
         }
     }
 
+    public func stopSpeaking() {
+        synthesizer.stop()
+    }
+
     public func clearConversation() async {
+        synthesizer.stop()
         messages.removeAll()
         await memory.clear()
         let greeting = ChatMessage(role: .system, content: "Контекст очищен.")

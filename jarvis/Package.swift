@@ -12,7 +12,21 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "Jarvis",
-            path: "Sources/Jarvis"
+            path: "Sources/Jarvis",
+            resources: [
+                .copy("Resources/Info.plist")
+            ],
+            linkerSettings: [
+                // Встраиваем Info.plist в секцию __TEXT/__info_plist бинаря,
+                // чтобы macOS прочитала NSMicrophoneUsageDescription и
+                // NSSpeechRecognitionUsageDescription при запросе доступа.
+                .unsafeFlags([
+                    "-Xlinker", "-sectcreate",
+                    "-Xlinker", "__TEXT",
+                    "-Xlinker", "__info_plist",
+                    "-Xlinker", "Sources/Jarvis/Resources/Info.plist"
+                ])
+            ]
         ),
         .testTarget(
             name: "JarvisTests",

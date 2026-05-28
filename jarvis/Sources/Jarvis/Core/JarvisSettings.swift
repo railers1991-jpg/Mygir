@@ -23,6 +23,9 @@ public final class JarvisSettings: ObservableObject {
         static let systemPrompt = "jarvis.systemPrompt"
         static let anthropicModel = "jarvis.anthropicModel"
         static let ollamaModel = "jarvis.ollamaModel"
+        static let speechLocale = "jarvis.speechLocale"
+        static let ttsVoiceID = "jarvis.ttsVoiceID"
+        static let ttsEnabled = "jarvis.ttsEnabled"
     }
     private static let keychainAccount = "anthropic_api_key"
     private static let defaultPrompt = """
@@ -53,6 +56,15 @@ public final class JarvisSettings: ObservableObject {
             }
         }
     }
+    @Published public var speechLocale: String {
+        didSet { UserDefaults.standard.set(speechLocale, forKey: Keys.speechLocale) }
+    }
+    @Published public var ttsVoiceID: String {
+        didSet { UserDefaults.standard.set(ttsVoiceID, forKey: Keys.ttsVoiceID) }
+    }
+    @Published public var ttsEnabled: Bool {
+        didSet { UserDefaults.standard.set(ttsEnabled, forKey: Keys.ttsEnabled) }
+    }
 
     public init() {
         let defaults = UserDefaults.standard
@@ -61,6 +73,9 @@ public final class JarvisSettings: ObservableObject {
         self.anthropicModel = defaults.string(forKey: Keys.anthropicModel) ?? "claude-sonnet-4-6"
         self.ollamaModel = defaults.string(forKey: Keys.ollamaModel) ?? "llama3.2"
         self.anthropicAPIKey = Keychain.get(account: Self.keychainAccount) ?? ""
+        self.speechLocale = defaults.string(forKey: Keys.speechLocale) ?? "ru-RU"
+        self.ttsVoiceID = defaults.string(forKey: Keys.ttsVoiceID) ?? ""
+        self.ttsEnabled = defaults.object(forKey: Keys.ttsEnabled) as? Bool ?? false
     }
 
     public func makeProvider() -> LLMProvider {

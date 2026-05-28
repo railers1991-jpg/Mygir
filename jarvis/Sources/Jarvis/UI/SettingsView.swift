@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct SettingsView: View {
     @EnvironmentObject var settings: JarvisSettings
@@ -9,11 +10,14 @@ struct SettingsView: View {
         TabView {
             providerTab.tabItem { Label("Провайдер", systemImage: "brain") }
             promptTab.tabItem { Label("Промпт", systemImage: "text.bubble") }
+            voiceTab.tabItem { Label("Голос", systemImage: "waveform") }
         }
-        .frame(width: 520, height: 420)
+        .frame(width: 560, height: 460)
         .padding(20)
         .onAppear { keyDraft = settings.anthropicAPIKey }
     }
+
+    // MARK: - Провайдер
 
     private var providerTab: some View {
         Form {
@@ -80,6 +84,8 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Промпт
+
     private var promptTab: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Системный промпт")
@@ -93,5 +99,48 @@ struct SettingsView: View {
                 Button("Сбросить к дефолту") { settings.resetSystemPrompt() }
             }
         }
+    }
+
+    // MARK: - Голос
+
+    private var voiceTab: some View {
+        Form {
+            Section("Распознавание") {
+                Picker("Язык", selection: $settings.speechLocale) {
+                    ForEach(speechLocales, id: \.self) { code in
+                        Text(localeLabel(code)).tag(code)
+                    }
+                }
+                Text("Системе нужно разрешение на микрофон и распознавание речи — будет запрошено при первом нажатии ⌘L.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Озвучка") {
+                Toggle("Озвучивать ответы", isOn: $settings.ttsEnabled)
+                Picker("Голос", selection: $settings.ttsVoiceID) {
+                    Text("Системный по умолчанию").tag("")
+                    ForEach(voices, id: \.identifier) { voice in
+                        Text("\(voice.name) — \(voice.language)").tag(voice.identifier)
+                    }
+                }
+                .disabled(!settings.ttsEnabled)
+            }
+        }
+    }
+
+    private var voices: [AVSpeechSynthesisVoice] {
+        SystemSpeechSynthesizer.availableVoices
+    }
+
+    private let speechLocales = [
+        "ru-RU", "en-US", "en-GB", "uk-UA", "de-DE", "fr-FR", "es-ES", "it-IT",
+        "pt-BR", "ja-JP", "zh-CN", "tr-TR", "pl-PL", "nl-NL"
+    ]
+
+    private func localeLabel(_ code: String) -> String {
+        let locale = Locale(identifier: code)
+        let name = locale.localizedString(forIdentifier: code) ?? code
+        return "\(name) (\(code))"
     }
 }

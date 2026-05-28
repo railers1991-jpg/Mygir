@@ -20,12 +20,17 @@
 - ✅ Командa "Очистить контекст" (⌘⇧K)
 - ✅ Persistence чата через `DiskStore`
 
-## Фаза 2 — Голос
+## Фаза 2 — Голос ✅ (сейчас)
 
-- `AppleSpeechRecognizer` на базе `SFSpeechRecognizer` + `AVAudioEngine`
-- Hotword detection: горячая клавиша (⌥-Space) → запись → распознавание
-- TTS через `AVSpeechSynthesizer` уже есть, добавить выбор голоса
-- Опция: ElevenLabs/локальный neural TTS для премиум-голоса
+- ✅ `AppleSpeechRecognizer` на `SFSpeechRecognizer` + `AVAudioEngine`
+- ✅ Запрос разрешений на микрофон и распознавание
+- ✅ Кнопка-микрофон + ⌘L внутри окна
+- ✅ Partial transcript-баннер во время записи
+- ✅ Выбор языка распознавания в Settings
+- ✅ TTS: список системных голосов, выбор в Settings, тоггл автоозвучки
+- ✅ `Info.plist` встроен в бинарь через linker `-sectcreate`
+- (отложено) ElevenLabs / локальный neural TTS — кандидат на Фазу 2.5
+- (отложено) Глобальный hotkey из любого приложения — переедет в Фазу 7
 
 ## Фаза 3 — Память и "нейроны"
 

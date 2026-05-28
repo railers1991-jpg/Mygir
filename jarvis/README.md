@@ -3,9 +3,9 @@
 Персональный AI-ассистент для macOS: голос, память, управление маком,
 локальные и облачные модели, самообучение.
 
-> Статус: **v0.2 — живой диалог**. Стриминговые ответы от Claude,
-> Settings-окно, ключ в Keychain, переключение провайдеров на лету.
-> Дальше — голос. См. [ROADMAP.md](./ROADMAP.md).
+> Статус: **v0.3 — голос**. К стримингу добавились распознавание речи
+> через Apple Speech, выбор голоса для озвучки и автоозвучка ответов.
+> Дальше — векторная память. См. [ROADMAP.md](./ROADMAP.md).
 
 ## Как запустить
 
@@ -16,10 +16,24 @@ cd jarvis
 open Package.swift     # откроется Xcode, дальше Cmd+R
 ```
 
-Окно поднимется с echo-провайдером — можешь сразу проверить UI и стриминг
-по словам. Чтобы заговорить с Claude — открой **Settings (⌘,)**, выбери
-*Anthropic Claude*, вставь `sk-ant-...` ключ и нажми *Сохранить*. Ключ
-сохранится в Keychain, переключение применится без перезапуска.
+Окно поднимется с echo-провайдером — можешь сразу проверить UI, стриминг
+по словам и микрофон. Чтобы заговорить с Claude — открой **Settings (⌘,)**,
+выбери *Anthropic Claude*, вставь `sk-ant-...` и нажми *Сохранить*. Ключ
+сохранится в Keychain.
+
+## Голос
+
+- `⌘L` или кнопка-микрофон → запрос разрешений на микрофон/распознавание
+  (только в первый раз) → запись → ещё раз `⌘L` для отправки.
+- Язык распознавания — Settings → Голос.
+- Чтобы Jarvis отвечал голосом — там же включи "Озвучивать ответы"
+  и выбери голос (список из `AVSpeechSynthesisVoice.speechVoices()`).
+
+**Важно про разрешения:** `Info.plist` с `NSMicrophoneUsageDescription`
+и `NSSpeechRecognitionUsageDescription` встроен в бинарь через
+linker-флаги в `Package.swift`. Если запускаешь `swift run` из терминала
+и macOS отказывает — попробуй `Cmd+R` из Xcode, он подписывает запуск
+ad-hoc и системный диалог о разрешениях появится корректно.
 
 ## Локальная модель (Ollama)
 
@@ -29,37 +43,43 @@ ollama pull llama3.2
 ollama serve
 ```
 
-В Settings → выбери *Локальная (Ollama)*, при желании поменяй модель.
+В Settings → выбери *Локальная (Ollama)*.
 
 ## Горячие клавиши
 
 - `⌘,` — Settings
 - `⌘↩` — отправить сообщение
+- `⌘L` — старт/стоп голосового ввода
 - `⌘⇧K` — очистить контекст
 
 ## Структура
 
 ```
 Sources/Jarvis/
-├── JarvisApp.swift          точка входа, @main, scene-ы
+├── JarvisApp.swift              точка входа, @main, scene-ы
 ├── UI/
-│   ├── ContentView.swift    чат + стриминговый курсор
-│   └── SettingsView.swift   провайдер / промпт / ключ
+│   ├── ContentView.swift        чат + микрофон + стриминговый курсор
+│   └── SettingsView.swift       3 вкладки: провайдер / промпт / голос
 ├── Core/
-│   ├── Orchestrator.swift   стриминг, подмена провайдера на лету
+│   ├── Orchestrator.swift       стриминг, авто-TTS
 │   ├── ChatMessage.swift
-│   └── JarvisSettings.swift хранение в UserDefaults + Keychain
+│   └── JarvisSettings.swift     UserDefaults + Keychain
 ├── LLM/
-│   ├── LLMProvider.swift    протокол + Echo заглушка
+│   ├── LLMProvider.swift        Echo заглушка
 │   ├── AnthropicProvider.swift  SSE-стриминг Claude
-│   └── LocalProvider.swift  стрим Ollama
+│   └── LocalProvider.swift      стрим Ollama
 ├── Memory/
-│   ├── MemoryStore.swift    InMemoryStore
-│   └── DiskStore.swift      JSON в Application Support
+│   ├── MemoryStore.swift        InMemoryStore
+│   └── DiskStore.swift          JSON в Application Support
 ├── Security/
-│   └── Keychain.swift       обёртка над Security framework
-├── Voice/                   — Фаза 2
-└── System/                  — Фаза 4
+│   └── Keychain.swift
+├── Voice/
+│   ├── AppleSpeechRecognizer.swift   SFSpeechRecognizer + AVAudioEngine
+│   └── SpeechSynthesizer.swift       AVSpeechSynthesizer + список голосов
+├── System/
+│   └── SystemController.swift   — управление маком (Фаза 4)
+└── Resources/
+    └── Info.plist               usage descriptions для микрофона/speech
 ```
 
 ## Тесты

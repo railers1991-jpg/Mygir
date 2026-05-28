@@ -1,9 +1,12 @@
 import SwiftUI
+import Speech
 
 struct ContentView: View {
     @EnvironmentObject var orchestrator: Orchestrator
     @EnvironmentObject var settings: JarvisSettings
+    @StateObject private var recognizer = AppleSpeechRecognizer()
     @State private var input: String = ""
+    @State private var permissionError: String?
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -11,11 +14,27 @@ struct ContentView: View {
             header
             Divider()
             transcript
+            if let error = permissionError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 6)
+            }
+            if recognizer.isListening || !recognizer.partialTranscript.isEmpty {
+                listeningBanner
+            }
             Divider()
             composer
         }
         .background(Color(NSColor.windowBackgroundColor))
-        .onAppear { inputFocused = true }
+        .onAppear {
+            inputFocused = true
+            recognizer.setLocale(Locale(identifier: settings.speechLocale))
+        }
+        .onChange(of: settings.speechLocale) { newValue in
+            recognizer.setLocale(Locale(identifier: newValue))
+        }
     }
 
     private var header: some View {
@@ -33,6 +52,11 @@ struct ContentView: View {
                 Text("· нет ключа")
                     .font(.caption)
                     .foregroundStyle(.red)
+            }
+            if settings.ttsEnabled {
+                Image(systemName: "speaker.wave.2")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(12)
@@ -66,22 +90,40 @@ struct ContentView: View {
         }
     }
 
+    private var listeningBanner: some View {
+        HStack(spacing: 8) {
+            PulsingWaveform()
+            Text(recognizer.partialTranscript.isEmpty
+                 ? "Слушаю..."
+                 : recognizer.partialTranscript)
+                .lineLimit(2)
+                .truncationMode(.head)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.red.opacity(0.08))
+    }
+
     private var composer: some View {
         HStack(spacing: 8) {
-            Button {
-                // TODO: подключим в Фазе 2
-            } label: {
-                Image(systemName: "mic.fill")
+            Button(action: toggleMic) {
+                Image(systemName: recognizer.isListening ? "stop.circle.fill" : "mic.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(recognizer.isListening ? .red : .accentColor)
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.borderless)
-            .help("Голосовой ввод (Фаза 2)")
+            .keyboardShortcut("l", modifiers: .command)
+            .help(recognizer.isListening
+                  ? "Остановить запись (⌘L)"
+                  : "Голосовой ввод (⌘L)")
 
             TextField("Скажи или напечатай...", text: $input)
                 .textFieldStyle(.roundedBorder)
                 .focused($inputFocused)
                 .onSubmit(send)
-                .disabled(orchestrator.isThinking)
+                .disabled(orchestrator.isThinking || recognizer.isListening)
 
             Button("Отправить", action: send)
                 .keyboardShortcut(.return, modifiers: .command)
@@ -96,6 +138,28 @@ struct ContentView: View {
         guard !text.isEmpty else { return }
         input = ""
         Task { await orchestrator.handle(userInput: text) }
+    }
+
+    private func toggleMic() {
+        if recognizer.isListening {
+            recognizer.stopListening()
+            return
+        }
+        Task {
+            let ok = await recognizer.requestPermissions()
+            guard ok else {
+                permissionError = "Нет разрешения на микрофон или распознавание речи. Системные настройки → Privacy & Security."
+                return
+            }
+            permissionError = nil
+            do {
+                try recognizer.startListening { recognized in
+                    Task { await orchestrator.handle(userInput: recognized) }
+                }
+            } catch {
+                permissionError = "Не удалось включить запись: \(error.localizedDescription)"
+            }
+        }
     }
 }
 
@@ -131,6 +195,20 @@ struct MessageBubble: View {
         case .assistant: return Color.gray.opacity(0.18)
         case .system: return Color.yellow.opacity(0.18)
         }
+    }
+}
+
+private struct PulsingWaveform: View {
+    @State private var on = false
+    var body: some View {
+        Image(systemName: "waveform")
+            .foregroundStyle(.red)
+            .opacity(on ? 0.4 : 1.0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                    on = true
+                }
+            }
     }
 }
 
