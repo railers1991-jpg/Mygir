@@ -1,0 +1,23 @@
+// swift-tools-version: 5.9
+import PackageDescription
+
+let package = Package(
+    name: "Jarvis",
+    platforms: [
+        .macOS(.v13)
+    ],
+    products: [
+        .executable(name: "Jarvis", targets: ["Jarvis"])
+    ],
+    targets: [
+        .executableTarget(
+            name: "Jarvis",
+            path: "Sources/Jarvis"
+        ),
+        .testTarget(
+            name: "JarvisTests",
+            dependencies: ["Jarvis"],
+            path: "Tests/JarvisTests"
+        )
+    ]
+)
