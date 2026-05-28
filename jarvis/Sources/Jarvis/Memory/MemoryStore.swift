@@ -4,6 +4,7 @@ public protocol MemoryStore: Sendable {
     func append(_ message: ChatMessage) async
     func recentContext(limit: Int) async -> [ChatMessage]
     func search(query: String, limit: Int) async -> [ChatMessage]
+    func clear() async
 }
 
 public actor InMemoryStore: MemoryStore {
@@ -25,5 +26,9 @@ public actor InMemoryStore: MemoryStore {
             .filter { $0.content.lowercased().contains(q) }
             .suffix(limit)
             .map { $0 }
+    }
+
+    public func clear() async {
+        messages.removeAll()
     }
 }

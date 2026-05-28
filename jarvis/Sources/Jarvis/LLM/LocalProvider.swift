@@ -1,9 +1,7 @@
 import Foundation
 
-/// Заглушка для локального инференса. В будущем — интеграция с llama.cpp / MLX.
-/// Варианты:
-/// - HTTP к локальному llama.cpp/Ollama (http://localhost:11434)
-/// - Прямая bridging-обёртка над MLX-Swift или llama.cpp.spm
+/// Локальный инференс через Ollama (`http://localhost:11434`).
+/// Альтернатива на будущее — bridging с MLX-Swift или llama.cpp.spm.
 public struct LocalProvider: LLMProvider {
     public let name: String = "local (ollama)"
     private let endpoint: URL
@@ -15,30 +13,50 @@ public struct LocalProvider: LLMProvider {
         self.model = model
     }
 
-    public func complete(messages: [ChatMessage]) async throws -> String {
-        let body: [[String: String]] = messages
-            .filter { $0.role != .system }
-            .map { ["role": $0.role.rawValue, "content": $0.content] }
+    public func stream(messages: [ChatMessage], systemPrompt: String) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task { [endpoint, model] in
+                do {
+                    var body: [[String: String]] = [["role": "system", "content": systemPrompt]]
+                    body.append(contentsOf: messages
+                        .filter { $0.role != .system }
+                        .map { ["role": $0.role.rawValue, "content": $0.content] })
 
-        let payload: [String: Any] = [
-            "model": model,
-            "messages": body,
-            "stream": false
-        ]
+                    let payload: [String: Any] = [
+                        "model": model,
+                        "messages": body,
+                        "stream": true
+                    ]
 
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+                    var request = URLRequest(url: endpoint)
+                    request.httpMethod = "POST"
+                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
-        let (data, _) = try await URLSession.shared.data(for: request)
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let message = json["message"] as? [String: Any],
-              let text = message["content"] as? String else {
-            throw NSError(domain: "Local", code: -1, userInfo: [
-                NSLocalizedDescriptionKey: "Не удалось распарсить ответ от локальной модели"
-            ])
+                    let (bytes, response) = try await URLSession.shared.bytes(for: request)
+                    guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                        throw NSError(domain: "Local", code: -1, userInfo: [
+                            NSLocalizedDescriptionKey: "Ollama недоступен (HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)). Проверь `ollama serve`."
+                        ])
+                    }
+
+                    for try await line in bytes.lines {
+                        guard let data = line.data(using: .utf8),
+                              let event = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                            continue
+                        }
+                        if let message = event["message"] as? [String: Any],
+                           let chunk = message["content"] as? String, !chunk.isEmpty {
+                            continuation.yield(chunk)
+                        }
+                        if event["done"] as? Bool == true { break }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
         }
-        return text
     }
 }

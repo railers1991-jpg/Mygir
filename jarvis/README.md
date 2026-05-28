@@ -3,8 +3,9 @@
 Персональный AI-ассистент для macOS: голос, память, управление маком,
 локальные и облачные модели, самообучение.
 
-> Статус: **v0.1 — скелет**. Запускается, рисует UI, отвечает заглушкой.
-> Дальнейшие фазы — в [ROADMAP.md](./ROADMAP.md).
+> Статус: **v0.2 — живой диалог**. Стриминговые ответы от Claude,
+> Settings-окно, ключ в Keychain, переключение провайдеров на лету.
+> Дальше — голос. См. [ROADMAP.md](./ROADMAP.md).
 
 ## Как запустить
 
@@ -15,34 +16,10 @@ cd jarvis
 open Package.swift     # откроется Xcode, дальше Cmd+R
 ```
 
-Или через CLI:
-
-```bash
-swift build
-swift run Jarvis
-```
-
-(UI-окно поднимется только при запуске из Xcode — SwiftPM-исполняемый
-без app bundle не имеет права на NSApplication.)
-
-## Подключить настоящего Claude
-
-В `JarvisApp.swift` замени:
-
-```swift
-@StateObject private var orchestrator = Orchestrator(
-    llm: AnthropicProvider(apiKey: ProcessInfo.processInfo.environment["ANTHROPIC_API_KEY"] ?? ""),
-    memory: try! DiskStore()
-)
-```
-
-И запусти с переменной окружения:
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-... swift run Jarvis
-```
-
-В Xcode — Edit Scheme → Run → Arguments → Environment Variables.
+Окно поднимется с echo-провайдером — можешь сразу проверить UI и стриминг
+по словам. Чтобы заговорить с Claude — открой **Settings (⌘,)**, выбери
+*Anthropic Claude*, вставь `sk-ant-...` ключ и нажми *Сохранить*. Ключ
+сохранится в Keychain, переключение применится без перезапуска.
 
 ## Локальная модель (Ollama)
 
@@ -52,19 +29,37 @@ ollama pull llama3.2
 ollama serve
 ```
 
-Затем в `JarvisApp.swift`: `llm: LocalProvider()`.
+В Settings → выбери *Локальная (Ollama)*, при желании поменяй модель.
+
+## Горячие клавиши
+
+- `⌘,` — Settings
+- `⌘↩` — отправить сообщение
+- `⌘⇧K` — очистить контекст
 
 ## Структура
 
 ```
 Sources/Jarvis/
-├── JarvisApp.swift          точка входа, @main
-├── UI/                      SwiftUI views
-├── Core/                    Orchestrator, ChatMessage
-├── LLM/                     провайдеры (Echo/Anthropic/Local)
-├── Memory/                  хранилище контекста
-├── Voice/                   распознавание и синтез речи
-└── System/                  управление macOS
+├── JarvisApp.swift          точка входа, @main, scene-ы
+├── UI/
+│   ├── ContentView.swift    чат + стриминговый курсор
+│   └── SettingsView.swift   провайдер / промпт / ключ
+├── Core/
+│   ├── Orchestrator.swift   стриминг, подмена провайдера на лету
+│   ├── ChatMessage.swift
+│   └── JarvisSettings.swift хранение в UserDefaults + Keychain
+├── LLM/
+│   ├── LLMProvider.swift    протокол + Echo заглушка
+│   ├── AnthropicProvider.swift  SSE-стриминг Claude
+│   └── LocalProvider.swift  стрим Ollama
+├── Memory/
+│   ├── MemoryStore.swift    InMemoryStore
+│   └── DiskStore.swift      JSON в Application Support
+├── Security/
+│   └── Keychain.swift       обёртка над Security framework
+├── Voice/                   — Фаза 2
+└── System/                  — Фаза 4
 ```
 
 ## Тесты

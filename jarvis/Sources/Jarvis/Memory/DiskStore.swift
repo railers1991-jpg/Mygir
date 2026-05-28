@@ -35,6 +35,11 @@ public actor DiskStore: MemoryStore {
             .map { $0 }
     }
 
+    public func clear() async {
+        messages.removeAll()
+        persist()
+    }
+
     private func persist() {
         guard let data = try? JSONEncoder().encode(messages) else { return }
         try? data.write(to: url, options: .atomic)
