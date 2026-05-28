@@ -9,11 +9,11 @@ public final class Orchestrator: ObservableObject {
 
     private var llm: LLMProvider
     private let memory: MemoryStore
-    private let settings: JarvisSettings
+    private let settings: MiraSettings
     private let synthesizer = SystemSpeechSynthesizer()
     private var settingsCancellable: AnyCancellable?
 
-    public init(settings: JarvisSettings, memory: MemoryStore) {
+    public init(settings: MiraSettings, memory: MemoryStore) {
         self.settings = settings
         self.memory = memory
         let initial = settings.makeProvider()
@@ -25,7 +25,7 @@ public final class Orchestrator: ObservableObject {
             if stored.isEmpty {
                 let greeting = ChatMessage(
                     role: .system,
-                    content: "Привет. Я — Jarvis (v0.3). Нажми кнопку микрофона или ⌘L, чтобы говорить."
+                    content: "Привет. Я — Mira (v0.3). Нажми кнопку микрофона или ⌘L, чтобы говорить."
                 )
                 messages = [greeting]
                 await memory.append(greeting)

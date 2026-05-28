@@ -1,4 +1,4 @@
-# Jarvis
+# Mira
 
 Персональный AI-ассистент для macOS: голос, память, управление маком,
 локальные и облачные модели, самообучение.
@@ -12,7 +12,7 @@
 Нужен **macOS 13+ и Xcode 15+**.
 
 ```bash
-cd jarvis
+cd mira
 open Package.swift     # откроется Xcode, дальше Cmd+R
 ```
 
@@ -26,7 +26,7 @@ open Package.swift     # откроется Xcode, дальше Cmd+R
 - `⌘L` или кнопка-микрофон → запрос разрешений на микрофон/распознавание
   (только в первый раз) → запись → ещё раз `⌘L` для отправки.
 - Язык распознавания — Settings → Голос.
-- Чтобы Jarvis отвечал голосом — там же включи "Озвучивать ответы"
+- Чтобы Mira отвечала голосом — там же включи "Озвучивать ответы"
   и выбери голос (список из `AVSpeechSynthesisVoice.speechVoices()`).
 
 **Важно про разрешения:** `Info.plist` с `NSMicrophoneUsageDescription`
@@ -55,15 +55,15 @@ ollama serve
 ## Структура
 
 ```
-Sources/Jarvis/
-├── JarvisApp.swift              точка входа, @main, scene-ы
+Sources/Mira/
+├── MiraApp.swift              точка входа, @main, scene-ы
 ├── UI/
 │   ├── ContentView.swift        чат + микрофон + стриминговый курсор
 │   └── SettingsView.swift       3 вкладки: провайдер / промпт / голос
 ├── Core/
 │   ├── Orchestrator.swift       стриминг, авто-TTS
 │   ├── ChatMessage.swift
-│   └── JarvisSettings.swift     UserDefaults + Keychain
+│   └── MiraSettings.swift     UserDefaults + Keychain
 ├── LLM/
 │   ├── LLMProvider.swift        Echo заглушка
 │   ├── AnthropicProvider.swift  SSE-стриминг Claude

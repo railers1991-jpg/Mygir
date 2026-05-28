@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 public enum Keychain {
-    private static let service = "Jarvis"
+    private static let service = "Mira"
 
     public static func set(_ value: String, account: String) throws {
         guard let data = value.data(using: .utf8) else { return }

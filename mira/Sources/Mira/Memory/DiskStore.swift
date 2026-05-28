@@ -5,11 +5,11 @@ public actor DiskStore: MemoryStore {
     private let url: URL
     private var messages: [ChatMessage] = []
 
-    public init(filename: String = "jarvis-memory.json") throws {
+    public init(filename: String = "mira-memory.json") throws {
         let fm = FileManager.default
         let dir = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
                              appropriateFor: nil, create: true)
-            .appendingPathComponent("Jarvis", isDirectory: true)
+            .appendingPathComponent("Mira", isDirectory: true)
         try fm.createDirectory(at: dir, withIntermediateDirectories: true)
         self.url = dir.appendingPathComponent(filename)
         if let data = try? Data(contentsOf: url),

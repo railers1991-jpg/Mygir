@@ -3,8 +3,8 @@
 <plist version="1.0">
 <dict>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Jarvis слушает микрофон для голосового ввода.</string>
+    <string>Mira слушает микрофон для голосового ввода.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>Jarvis преобразует речь в текст через систему распознавания Apple.</string>
+    <string>Mira преобразует речь в текст через систему распознавания Apple.</string>
 </dict>
 </plist>

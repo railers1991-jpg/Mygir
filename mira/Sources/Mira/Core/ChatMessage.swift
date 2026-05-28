@@ -7,7 +7,7 @@ public struct ChatMessage: Identifiable, Equatable, Codable {
         var label: String {
             switch self {
             case .user: return "Ты"
-            case .assistant: return "Jarvis"
+            case .assistant: return "Mira"
             case .system: return "система"
             }
         }

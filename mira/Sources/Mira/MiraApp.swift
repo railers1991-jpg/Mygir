@@ -1,12 +1,12 @@
 import SwiftUI
 
 @main
-struct JarvisApp: App {
-    @StateObject private var settings: JarvisSettings
+struct MiraApp: App {
+    @StateObject private var settings: MiraSettings
     @StateObject private var orchestrator: Orchestrator
 
     init() {
-        let settings = JarvisSettings()
+        let settings = MiraSettings()
         let memory: MemoryStore = (try? DiskStore()) ?? InMemoryStore()
         _settings = StateObject(wrappedValue: settings)
         _orchestrator = StateObject(wrappedValue: Orchestrator(
@@ -16,7 +16,7 @@ struct JarvisApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Jarvis") {
+        WindowGroup("Mira") {
             ContentView()
                 .environmentObject(orchestrator)
                 .environmentObject(settings)

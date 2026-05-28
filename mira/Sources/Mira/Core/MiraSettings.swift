@@ -17,21 +17,21 @@ public enum ProviderKind: String, CaseIterable, Identifiable {
 }
 
 @MainActor
-public final class JarvisSettings: ObservableObject {
+public final class MiraSettings: ObservableObject {
     private enum Keys {
-        static let provider = "jarvis.provider"
-        static let systemPrompt = "jarvis.systemPrompt"
-        static let anthropicModel = "jarvis.anthropicModel"
-        static let ollamaModel = "jarvis.ollamaModel"
-        static let speechLocale = "jarvis.speechLocale"
-        static let ttsVoiceID = "jarvis.ttsVoiceID"
-        static let ttsEnabled = "jarvis.ttsEnabled"
+        static let provider = "mira.provider"
+        static let systemPrompt = "mira.systemPrompt"
+        static let anthropicModel = "mira.anthropicModel"
+        static let ollamaModel = "mira.ollamaModel"
+        static let speechLocale = "mira.speechLocale"
+        static let ttsVoiceID = "mira.ttsVoiceID"
+        static let ttsEnabled = "mira.ttsEnabled"
     }
     private static let keychainAccount = "anthropic_api_key"
     private static let defaultPrompt = """
-    Ты — Jarvis, персональный ассистент пользователя на macOS. \
+    Ты — Mira, персональная ассистентка пользователя на macOS. \
     Отвечай кратко, по делу, на языке вопроса. \
-    Если просят сделать что-то с системой — опиши, что бы сделал, \
+    Если просят сделать что-то с системой — опиши, что бы сделала, \
     пока инструменты управления маком не подключены.
     """
 

@@ -1,7 +1,7 @@
 import XCTest
-@testable import Jarvis
+@testable import Mira
 
-final class JarvisCoreTests: XCTestCase {
+final class MiraCoreTests: XCTestCase {
 
     func testEchoProviderStreamsText() async throws {
         let provider = EchoLLMProvider()
@@ -28,7 +28,7 @@ final class JarvisCoreTests: XCTestCase {
 
     @MainActor
     func testOrchestratorAppendsStreamedAssistantMessage() async {
-        let settings = JarvisSettings()
+        let settings = MiraSettings()
         settings.provider = .echo
         let memory = InMemoryStore()
         let orchestrator = Orchestrator(settings: settings, memory: memory)

@@ -3,7 +3,7 @@ import Speech
 
 struct ContentView: View {
     @EnvironmentObject var orchestrator: Orchestrator
-    @EnvironmentObject var settings: JarvisSettings
+    @EnvironmentObject var settings: MiraSettings
     @StateObject private var recognizer = AppleSpeechRecognizer()
     @State private var input: String = ""
     @State private var permissionError: String?
@@ -42,7 +42,7 @@ struct ContentView: View {
             Circle()
                 .fill(orchestrator.isThinking ? Color.orange : Color.green)
                 .frame(width: 10, height: 10)
-            Text("Jarvis")
+            Text("Mira")
                 .font(.headline)
             Spacer()
             Text(orchestrator.providerName)

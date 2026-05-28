@@ -2,7 +2,7 @@ import SwiftUI
 import AVFoundation
 
 struct SettingsView: View {
-    @EnvironmentObject var settings: JarvisSettings
+    @EnvironmentObject var settings: MiraSettings
     @State private var keyDraft: String = ""
     @State private var showKey: Bool = false
 
@@ -61,7 +61,7 @@ struct SettingsView: View {
                 }
                 .disabled(keyDraft == settings.anthropicAPIKey)
             }
-            Text("Ключ хранится в Keychain под service `Jarvis`, account `anthropic_api_key`.")
+            Text("Ключ хранится в Keychain под service `Mira`, account `anthropic_api_key`.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 

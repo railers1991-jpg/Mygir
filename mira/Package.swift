@@ -2,17 +2,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "Jarvis",
+    name: "Mira",
     platforms: [
         .macOS(.v13)
     ],
     products: [
-        .executable(name: "Jarvis", targets: ["Jarvis"])
+        .executable(name: "Mira", targets: ["Mira"])
     ],
     targets: [
         .executableTarget(
-            name: "Jarvis",
-            path: "Sources/Jarvis",
+            name: "Mira",
+            path: "Sources/Mira",
             resources: [
                 .copy("Resources/Info.plist")
             ],
@@ -24,14 +24,14 @@ let package = Package(
                     "-Xlinker", "-sectcreate",
                     "-Xlinker", "__TEXT",
                     "-Xlinker", "__info_plist",
-                    "-Xlinker", "Sources/Jarvis/Resources/Info.plist"
+                    "-Xlinker", "Sources/Mira/Resources/Info.plist"
                 ])
             ]
         ),
         .testTarget(
-            name: "JarvisTests",
-            dependencies: ["Jarvis"],
-            path: "Tests/JarvisTests"
+            name: "MiraTests",
+            dependencies: ["Mira"],
+            path: "Tests/MiraTests"
         )
     ]
 )
